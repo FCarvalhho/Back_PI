@@ -13,6 +13,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  *
  * @author Cansei2
@@ -37,7 +39,7 @@ public class AuthenticationService {
     public TokenResponse login(LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.username(), 
+                        request.username(),
                         request.password()
                 )
         );
@@ -47,6 +49,15 @@ public class AuthenticationService {
 
         String jwtToken = jwtService.generateToken(usuario);
 
-        return new TokenResponse(jwtToken);
+        List<String> roles = usuario.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .toList();
+
+        return new TokenResponse(
+                jwtToken,
+                usuario.getId(),
+                usuario.getNome(),
+                roles
+        );
     }
 }

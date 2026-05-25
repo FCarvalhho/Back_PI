@@ -39,7 +39,7 @@ CREATE TABLE catalog.produto_variacao (
     preco NUMERIC(10,2) NOT NULL,
     estoque INT DEFAULT 0,
 
-    FOREIGN KEY (produto_id) REFERENCES catalog.produto(id)
+    FOREIGN KEY (produto_id) REFERENCES catalog.produto(id) ON DELETE CASCADE
 );
 
 CREATE TABLE catalog.variacao_opcao (
@@ -48,6 +48,18 @@ CREATE TABLE catalog.variacao_opcao (
     atributo_id UUID NOT NULL,
     valor VARCHAR(100) NOT NULL,
 
-    FOREIGN KEY (variacao_id) REFERENCES catalog.produto_variacao(id),
-    FOREIGN KEY (atributo_id) REFERENCES catalog.atributo(id)
+    FOREIGN KEY (variacao_id) REFERENCES catalog.produto_variacao(id) ON DELETE CASCADE,
+    FOREIGN KEY (atributo_id) REFERENCES catalog.atributo(id) ON DELETE CASCADE,
+
+    UNIQUE (variacao_id, atributo_id)
+);
+
+CREATE TABLE catalog.imagem_variacao (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    variacao_id UUID NOT NULL,
+    url_imagem TEXT NOT NULL,
+    ordem INT DEFAULT 0,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (variacao_id) REFERENCES catalog.produto_variacao(id) ON DELETE CASCADE
 );

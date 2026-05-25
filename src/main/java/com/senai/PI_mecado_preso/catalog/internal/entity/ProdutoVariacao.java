@@ -4,17 +4,8 @@
  */
 package com.senai.PI_mecado_preso.catalog.internal.entity;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -45,6 +36,9 @@ public class ProdutoVariacao {
 
     @OneToMany(mappedBy = "variacao", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<VariacaoOpcao> opcoes;
+
+    @OneToMany(mappedBy = "variacao", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ImagemVariacao> imagens;
 
     public ProdutoVariacao() {
     }
@@ -96,6 +90,12 @@ public class ProdutoVariacao {
     public void setOpcoes(List<VariacaoOpcao> opcoes) {
         this.opcoes = opcoes;
     }
-    
-    
+
+    public List<ImagemVariacao> getImagens() {
+        return imagens;
+    }
+
+    public void setImagens(List<ImagemVariacao> imagens) {
+        this.imagens = imagens;
+    }
 }
