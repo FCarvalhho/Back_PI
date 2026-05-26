@@ -16,13 +16,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FlywayBillingConfig {
     @Bean
-    public Flyway flywayBilling(DataSource dataSource) {
+    public Flyway flywayBilling(DataSource data) {
         Flyway flyway = Flyway.configure()
-            .dataSource(dataSource)
-            .locations("classpath:db/migration/billing")
-            .schemas("billing") 
-            .table("flyway_schema_history") 
-            .load();
+                .dataSource(data)
+                .locations("classpath:db/migration/billing")
+                .schemas("billing")
+                .table("flyway_schema_history")
+                .load();
         flyway.migrate();
         return flyway;
     }
