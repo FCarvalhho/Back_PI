@@ -42,7 +42,7 @@ public interface ClienteMapper {
     default Set<String> mapRoles(Set<Role> roles) {
         if (roles == null) return null;
         return roles.stream()
-                .map(Role::getNome)
+                .map(Role::name)
                 .collect(Collectors.toSet());
     }
     

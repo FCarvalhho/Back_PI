@@ -26,33 +26,17 @@ CREATE TABLE iam.cliente (
     FOREIGN KEY (id) REFERENCES iam.usuario(id) ON DELETE CASCADE
 );
 
-CREATE TABLE iam.vendedor (
-    id UUID PRIMARY KEY,
-    cnpj VARCHAR(18) UNIQUE NOT NULL,
-    nome_responsavel VARCHAR(255) NOT NULL,
-    email_responsavel VARCHAR(255) NOT NULL,
-    telefone_responsavel VARCHAR(255) NOT NULL,
-    telefone VARCHAR(255) UNIQUE NOT NULL,
-
-    FOREIGN KEY (id) REFERENCES iam.usuario(id) ON DELETE CASCADE
-);
-
-CREATE TABLE iam.admin (
+CREATE TABLE iam.funcionario (
     id UUID PRIMARY KEY,
     matricula VARCHAR(255) UNIQUE NOT NULL,
 
     FOREIGN KEY (id) REFERENCES iam.usuario(id) ON DELETE CASCADE
 );
 
-CREATE TABLE iam.role (
-    id SERIAL PRIMARY KEY,
-    nome VARCHAR(50) UNIQUE NOT NULL
-);
-
 CREATE TABLE iam.usuario_role (
-    usuario_id UUID,
-    role_id INT,
-    PRIMARY KEY (usuario_id, role_id),
-    FOREIGN KEY (usuario_id) REFERENCES iam.usuario(id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES iam.role(id) ON DELETE CASCADE
+    usuario_id UUID NOT NULL,
+    role VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (usuario_id, role),
+    FOREIGN KEY (usuario_id) REFERENCES iam.usuario(id) ON DELETE CASCADE
 );

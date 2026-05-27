@@ -12,16 +12,12 @@ import java.util.UUID;
  *
  * @author Cansei2
  */
-public record VendedorResponseDTO(
+public record FuncionarioResponseDTO(
         UUID id,
         String nome,
         String email,
         Boolean ativo,
         LocalDateTime criadoEm,
         Set<String> roles,
-        String telefone,
-        String cnpj,
-        String nomeResponsavel,
-        String emailResponsavel,
-        String telefoneResponsavel
+        String matricula
 ) {}

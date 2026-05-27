@@ -4,7 +4,6 @@
  */
 package com.senai.PI_mecado_preso.shared.config.security;
 
-import com.senai.PI_mecado_preso.iam.internal.repository.UsuarioRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,9 +11,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,21 +28,36 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) {
         return http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(HttpMethod.GET, "/produtos/**").permitAll()
-                    .requestMatchers("/auth/**").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/produtos/**").hasRole("VENDEDOR")
-                    .requestMatchers(HttpMethod.PUT, "/produtos/**").hasRole("VENDEDOR")
-                    .requestMatchers(HttpMethod.DELETE, "/produtos/**").hasRole("VENDEDOR")
-                    .requestMatchers("/vendas/meu-relatorio").hasRole("VENDEDOR")
-                    .requestMatchers(HttpMethod.GET, "/admin/vendas-geral").hasRole("ADMIN")
-                    .requestMatchers(HttpMethod.DELETE, "/produtos/**").hasAnyRole("ADMIN", "VENDEDOR")
-                    .requestMatchers("/pedidos/**").hasRole("CLIENTE")
-                    .anyRequest().authenticated()
+
+                        // 1. Liberação do Swagger UI e API Docs (Obrigatório para funcionar)
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
+                        // 2. Rotas Públicas
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/files/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/produtos/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/iam/cliente").permitAll()
+                        // 3. Rotas de Catálogo (Apenas Estoque e Admin podem modificar)
+
+                        .requestMatchers(HttpMethod.POST, "/produtos/**").hasAnyRole("ESTOQUE", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/produtos/**").hasAnyRole("ESTOQUE", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/produtos/**").hasAnyRole("ESTOQUE", "ADMIN")
+
+                        // 4. Rotas de Vendas
+                        .requestMatchers(HttpMethod.GET, "/admin/vendas-geral").hasAnyRole("FATURAMENTO", "ADMIN")
+                        .requestMatchers("/pedidos/**").hasAnyRole("CLIENTE", "ADMIN")
+
+                        // 5. Qualquer outra requisição precisa estar logada
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -55,13 +69,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
         return config.getAuthenticationManager();
     }
 
     @Bean
-    public UserDetailsService userDetailsService(UsuarioRepository repository) {
-        return username -> repository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + username));
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring().requestMatchers("/files/**");
     }
+
 }

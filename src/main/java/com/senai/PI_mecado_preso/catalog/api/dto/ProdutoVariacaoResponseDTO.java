@@ -9,10 +9,11 @@ import java.util.UUID;
 
 public record ProdutoVariacaoResponseDTO(
         UUID id,
-        Produto produto,
         String sku,
         BigDecimal preco,
         Integer estoque,
-        List<VariacaoOpcao> opcoes
+        List<VariacaoOpcaoResponseDTO> opcoes,
+        List<ImagemVariacaoResponseDTO> imagens
+
 ) {
 }

@@ -25,8 +25,8 @@ public class ImagemVariacao {
     @Column(columnDefinition = "int default 0")
     private Integer ordem = 0;
 
-    @CreationTimestamp
     @Column(name = "criado_em", updatable = false)
+    @CreationTimestamp
     private LocalDateTime criadoEm;
 
     public ImagemVariacao() {

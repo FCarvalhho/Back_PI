@@ -8,7 +8,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, uses = {ProdutoAtributoMapper.class, ProdutoVariacaoMapper.class})
 public interface ProdutoMapper {
 
 
@@ -26,6 +26,5 @@ public interface ProdutoMapper {
     @Mapping(target = "criadoEm", ignore = true)
     @Mapping(target = "variacoes", ignore = true)
     @Mapping(target = "atributos", ignore = true)
-    @Mapping(target = "vendedorId", ignore = true)
     void updateEntityFromDto(ProdutoRequestDTO dto, @MappingTarget Produto entity);
 }

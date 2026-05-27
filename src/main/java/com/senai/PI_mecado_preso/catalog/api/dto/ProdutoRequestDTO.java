@@ -6,7 +6,6 @@ import java.util.UUID;
 public record ProdutoRequestDTO(
         String nome,
         String descricao,
-        UUID vendedorId,
         List<UUID> atributosIds
 ) {
 }

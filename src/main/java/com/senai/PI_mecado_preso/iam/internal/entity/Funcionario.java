@@ -14,13 +14,13 @@ import jakarta.persistence.Table;
  * @author Cansei2
  */
 @Entity
-@Table(name = "admin", schema = "iam")
-public class Admin extends Usuario {
+@Table(name = "funcionario", schema = "iam")
+public class Funcionario extends Usuario {
 
     @Column(nullable = false, unique = true)
     private String matricula;
 
-    public Admin() {
+    public Funcionario() {
     }
 
     public String getMatricula() {

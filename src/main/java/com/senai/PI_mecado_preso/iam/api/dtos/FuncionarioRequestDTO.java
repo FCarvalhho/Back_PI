@@ -6,13 +6,16 @@ package com.senai.PI_mecado_preso.iam.api.dtos;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
+
+import java.util.Set;
 
 /**
  *
  * @author Cansei2
  */
-public record AdminRequestDTO(
+public record FuncionarioRequestDTO(
         
         @NotBlank(message = "O nome é obrigatório")
         String nome,
@@ -26,5 +29,8 @@ public record AdminRequestDTO(
         String senha,
         
         @NotBlank(message = "A matricula é obrigatório")
-        String matricula
+        String matricula,
+
+        @NotEmpty(message = "É necessário informar pelo menos uma regra de acesso")
+        Set<String>roles
 ) {}
