@@ -10,6 +10,7 @@ import com.senai.PI_mecado_preso.iam.internal.repository.UsuarioRepository;
 import com.senai.PI_mecado_preso.shared.config.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -50,7 +51,7 @@ public class AuthenticationService {
         String jwtToken = jwtService.generateToken(usuario);
 
         List<String> roles = usuario.getAuthorities().stream()
-                .map(authority -> authority.getAuthority())
+                .map(GrantedAuthority::getAuthority)
                 .toList();
 
         return new TokenResponse(

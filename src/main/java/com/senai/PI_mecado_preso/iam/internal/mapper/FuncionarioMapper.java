@@ -4,17 +4,14 @@
  */
 package com.senai.PI_mecado_preso.iam.internal.mapper;
 
-import com.senai.PI_mecado_preso.iam.api.dtos.VendedorRequestDTO;
-import com.senai.PI_mecado_preso.iam.api.dtos.VendedorResponseDTO;
+import com.senai.PI_mecado_preso.iam.api.dtos.FuncionarioRequestDTO;
+import com.senai.PI_mecado_preso.iam.api.dtos.FuncionarioResponseDTO;
+import com.senai.PI_mecado_preso.iam.internal.entity.Funcionario;
 import com.senai.PI_mecado_preso.iam.internal.entity.Role;
-import com.senai.PI_mecado_preso.iam.internal.entity.Vendedor;
+import org.mapstruct.*;
+
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.Named;
-import org.mapstruct.ReportingPolicy;
 
 /**
  *
@@ -22,27 +19,27 @@ import org.mapstruct.ReportingPolicy;
  */
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
-public interface VendedorMapper {
+public interface FuncionarioMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "ativo", constant = "true")
-    @Mapping(target = "roles", ignore = true) 
-    Vendedor toEntity(VendedorRequestDTO dto);
+    @Mapping(target = "roles", ignore = true)
+    Funcionario toEntity(FuncionarioRequestDTO dto);
 
     @Mapping(target = "roles", source = "roles", qualifiedByName = "mapRoles")
-    VendedorResponseDTO toResponse(Vendedor vendedor);
+    FuncionarioResponseDTO toResponse(Funcionario admin);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "senha", ignore = true)
+    @Mapping(target = "senha", ignore = true) 
     @Mapping(target = "roles", ignore = true)
-    void updateEntityFromDto(VendedorRequestDTO dto, @MappingTarget Vendedor vendedor);
+    void updateEntityFromDto(FuncionarioRequestDTO dto, @MappingTarget Funcionario admin);
 
     // Método auxiliar para converter Set<Role> em Set<String>
     @Named("mapRoles")
     default Set<String> mapRoles(Set<Role> roles) {
         if (roles == null) return null;
         return roles.stream()
-                .map(Role::getNome)
+                .map(Role::name)
                 .collect(Collectors.toSet());
     }
     

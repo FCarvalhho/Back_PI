@@ -4,6 +4,7 @@
  */
 package com.senai.PI_mecado_preso.catalog.internal.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,10 +35,6 @@ public class Produto {
 
     @Column(columnDefinition = "TEXT")
     private String descricao;
-
-    // SOFT FK
-    @Column(name = "vendedor_id", nullable = false)
-    private UUID vendedorId;
 
     private Boolean ativo = true;
 
@@ -75,14 +72,6 @@ public class Produto {
 
     public void setDescricao(String descricao) {
         this.descricao = descricao;
-    }
-
-    public UUID getVendedorId() {
-        return vendedorId;
-    }
-
-    public void setVendedorId(UUID vendedorId) {
-        this.vendedorId = vendedorId;
     }
 
     public Boolean getAtivo() {

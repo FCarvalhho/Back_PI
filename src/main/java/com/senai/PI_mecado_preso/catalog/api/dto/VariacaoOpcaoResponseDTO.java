@@ -1,0 +1,10 @@
+package com.senai.PI_mecado_preso.catalog.api.dto;
+
+import java.util.UUID;
+
+public record VariacaoOpcaoResponseDTO(
+        UUID id,
+        AtributoResponseDTO atributo,
+        String valor
+) {
+}

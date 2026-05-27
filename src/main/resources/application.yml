@@ -17,7 +17,15 @@ logging:
   level:
     org:
       hibernate:
-        sql: DEBUG
+        sql: INFO
         orm:
           jdbc:
-            bind: TRACE
+            bind: INFO
+api:
+  security:
+    token:
+      secret: "SUA_CHAVE_SECRETA_SUPER_SEGURA_COM_PELO_MENOS_32_CARACTERES"
+      expiration: 86400000
+    admin:
+      email: "admin@vendas.com"
+      password: "admin123"

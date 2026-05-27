@@ -11,10 +11,9 @@ public record ProdutoResponseDTO(
         UUID id,
         String nome,
         String descricao,
-        UUID vendedorId,
         boolean ativo,
         LocalDateTime criadoEm,
-        List<ProdutoVariacao> variacoes,
-        List<ProdutoAtributo> atributos
+        List<ProdutoVariacaoIDsDTO> variacoes,
+        List<ProdutoAtributoResponseDTO> atributos
 ) {
 }
