@@ -14,6 +14,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,55 +44,48 @@ public class Pedido {
     private LocalDateTime criadoEm;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ItemPedido> itens;
+    private List<ItemPedido> itens = new ArrayList<>();
 
-    public Pedido() {
+    public Pedido() {}
+
+    public void adicionarItem(ItemPedido item) {
+        this.itens.add(item);
+        item.setPedido(this);
     }
 
     public UUID getId() {
         return id;
     }
-
     public void setId(UUID id) {
         this.id = id;
     }
-
     public UUID getClienteId() {
         return clienteId;
     }
-
     public void setClienteId(UUID clienteId) {
         this.clienteId = clienteId;
     }
-
     public String getStatus() {
         return status;
     }
-
     public void setStatus(String status) {
         this.status = status;
     }
-
     public BigDecimal getValorTotal() {
         return valorTotal;
     }
-
     public void setValorTotal(BigDecimal valorTotal) {
         this.valorTotal = valorTotal;
     }
-
     public LocalDateTime getCriadoEm() {
         return criadoEm;
     }
-
     public void setCriadoEm(LocalDateTime criadoEm) {
         this.criadoEm = criadoEm;
     }
-
     public List<ItemPedido> getItens() {
         return itens;
     }
-
     public void setItens(List<ItemPedido> itens) {
         this.itens = itens;
     }

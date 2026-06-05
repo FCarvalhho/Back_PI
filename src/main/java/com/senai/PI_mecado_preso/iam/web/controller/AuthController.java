@@ -7,6 +7,7 @@ package com.senai.PI_mecado_preso.iam.web.controller;
 import com.senai.PI_mecado_preso.iam.api.dtos.LoginRequest;
 import com.senai.PI_mecado_preso.iam.api.dtos.TokenResponse;
 import com.senai.PI_mecado_preso.iam.internal.service.AuthenticationService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,7 +29,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> authenticate(@RequestBody LoginRequest request) {
+    public ResponseEntity<TokenResponse> authenticate(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 }

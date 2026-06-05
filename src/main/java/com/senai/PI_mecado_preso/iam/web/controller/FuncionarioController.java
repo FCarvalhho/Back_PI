@@ -39,7 +39,7 @@ public class FuncionarioController {
     }
 
     @PostMapping
-    public ResponseEntity<FuncionarioResponseDTO> registrarFuncionario(@RequestBody FuncionarioRequestDTO dto) {
+    public ResponseEntity<FuncionarioResponseDTO> registrarFuncionario(@Valid @RequestBody FuncionarioRequestDTO dto) {
         return ResponseEntity.ok(service.salvar(dto));
     }
 
@@ -49,7 +49,7 @@ public class FuncionarioController {
     }
 
     @PatchMapping("/{id}/delete")
-    public ResponseEntity<Void> alterarStatus(@PathVariable @Valid UUID id) {
+    public ResponseEntity<Void> alterarStatus(@PathVariable UUID id) {
         service.deletar(id);
         return ResponseEntity.noContent().build();
     }
