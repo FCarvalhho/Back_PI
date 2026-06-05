@@ -11,6 +11,5 @@ public record ProdutoVariacaoResponseDTO(
         Integer estoque,
         List<VariacaoOpcaoResponseDTO> opcoes,
         List<ImagemVariacaoResponseDTO> imagens
-
 ) {
 }

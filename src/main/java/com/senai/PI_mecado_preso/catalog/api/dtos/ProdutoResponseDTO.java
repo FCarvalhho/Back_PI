@@ -10,7 +10,7 @@ public record ProdutoResponseDTO(
         String descricao,
         boolean ativo,
         LocalDateTime criadoEm,
-        List<ProdutoVariacaoIDsDTO> variacoes,
+        List<ProdutoVariacaoResponseDTO> variacoes,
         List<ProdutoAtributoResponseDTO> atributos
 ) {
 }
