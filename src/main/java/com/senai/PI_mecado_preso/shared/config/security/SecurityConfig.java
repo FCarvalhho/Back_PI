@@ -28,13 +28,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
-                        // 1. Liberação do Swagger UI e API Docs (Obrigatório para funcionar)
+                        // 1. Liberação do Swagger UI e API Docs
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -46,15 +46,15 @@ public class SecurityConfig {
                         .requestMatchers("/files/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/produtos/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/iam/cliente").permitAll()
-                        // 3. Rotas de Catálogo (Apenas Estoque e Admin podem modificar)
 
-                        .requestMatchers(HttpMethod.POST, "/produtos/**").hasAnyRole("ESTOQUE", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/produtos/**").hasAnyRole("ESTOQUE", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/produtos/**").hasAnyRole("ESTOQUE", "ADMIN")
+                        // 3. Rotas de Catálogo - Ajustado para Authority Literal para evitar duplicidade de ROLE_
+                        .requestMatchers(HttpMethod.POST, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
 
                         // 4. Rotas de Vendas
-                        .requestMatchers(HttpMethod.GET, "/admin/vendas-geral").hasAnyRole("FATURAMENTO", "ADMIN")
-                        .requestMatchers("/pedidos/**").hasAnyRole("CLIENTE", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/admin/vendas-geral").hasAnyAuthority("ROLE_FATURAMENTO", "ROLE_ADMIN")
+                        .requestMatchers("/pedidos/**").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
 
                         // 5. Qualquer outra requisição precisa estar logada
                         .anyRequest().authenticated()
@@ -69,7 +69,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 

@@ -1,9 +1,9 @@
 package com.senai.PI_mecado_preso.catalog.internal.service;
 
-import com.senai.PI_mecado_preso.catalog.api.dto.ImagemVariacaoRequestDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoVariacaoRequestDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoVariacaoResponseDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.VariacaoOpcaoRequestDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ImagemVariacaoRequestDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoRequestDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoResponseDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.VariacaoOpcaoRequestDTO;
 import com.senai.PI_mecado_preso.catalog.internal.entity.Atributo;
 import com.senai.PI_mecado_preso.catalog.internal.entity.ImagemVariacao;
 import com.senai.PI_mecado_preso.catalog.internal.entity.ProdutoVariacao;
@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class ProdutoVariacaoService {
+public class ProdutoVariacaoService{
 
     private final ProdutoVariacaoRepository repository;
     private final ProdutoVariacaoMapper mapper;

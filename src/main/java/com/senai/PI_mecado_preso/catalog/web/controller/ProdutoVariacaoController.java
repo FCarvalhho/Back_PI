@@ -1,7 +1,7 @@
 package com.senai.PI_mecado_preso.catalog.web.controller;
 
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoVariacaoRequestDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoVariacaoResponseDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoRequestDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoResponseDTO;
 import com.senai.PI_mecado_preso.catalog.internal.service.ProdutoVariacaoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

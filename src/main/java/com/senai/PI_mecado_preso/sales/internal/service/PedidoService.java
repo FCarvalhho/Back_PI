@@ -1,69 +1,93 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.sales.internal.service;
 
-import com.senai.PI_mecado_preso.sales.api.dtos.ItemPedidoRequestDTO;
-import com.senai.PI_mecado_preso.sales.api.dtos.PedidoCriadoEvent;
-import com.senai.PI_mecado_preso.sales.api.dtos.PedidoResponseDTO;
-import com.senai.PI_mecado_preso.sales.internal.entity.ItemPedido;
+import com.senai.PI_mecado_preso.catalog.api.CatalogoPublicaAPI;
+import com.senai.PI_mecado_preso.iam.api.IamPublicaApi;
+import com.senai.PI_mecado_preso.sales.api.dtos.*;
 import com.senai.PI_mecado_preso.sales.internal.entity.Pedido;
+import com.senai.PI_mecado_preso.sales.internal.entity.ItemPedido;
 import com.senai.PI_mecado_preso.sales.internal.repository.PedidoRepository;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
-import org.springframework.context.ApplicationEventPublisher;
+import com.senai.PI_mecado_preso.sales.internal.mapper.PedidoMapper;
+import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- *
- * @author Cansei2
- */
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
 @Service
+@Transactional(readOnly = true)
 public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
-    private final ItemPedidoService itemPedidoService;
-    private final ApplicationEventPublisher eventPublisher;
+    private final PedidoMapper pedidoMapper;
+    private final IamPublicaApi iamPublicAPI;
+    private final CatalogoPublicaAPI catalogoEstoqueAPI;
 
-    public PedidoService(PedidoRepository pedidoRepository, ItemPedidoService itemPedidoService, ApplicationEventPublisher eventPublisher) {
+    public PedidoService(PedidoRepository pedidoRepository, PedidoMapper pedidoMapper, IamPublicaApi iamPublicAPI, CatalogoPublicaAPI catalogoEstoqueAPI) {
         this.pedidoRepository = pedidoRepository;
-        this.itemPedidoService = itemPedidoService;
-        this.eventPublisher = eventPublisher;
+        this.pedidoMapper = pedidoMapper;
+        this.iamPublicAPI = iamPublicAPI;
+        this.catalogoEstoqueAPI = catalogoEstoqueAPI;
     }
 
-    /*
     @Transactional
-    public PedidoResponseDTO realizarVenda(List<ItemPedidoRequestDTO> itensDTO, UUID clienteId) {
-        // 1. Cria a base do pedido com a Soft FK do Cliente[cite: 4]
+    public PedidoCriadoResponseDTO criarPedido(PedidoRequestDTO request) {
+        ResultadoPadrao<?> validacaoIam = iamPublicAPI.validarUsuario(request.clienteId());
+        if (!validacaoIam.isValid()) {
+            throw new RuntimeException("Falha no checkout: " + validacaoIam.failureReason());
+        }
+
         Pedido pedido = new Pedido();
-        pedido.setClienteId(clienteId); 
-        pedido.setStatus("PROCESSANDO");
+        pedido.setClienteId(request.clienteId());
+        pedido.setStatus("PENDENTE");
 
-        // 2. Transforma os DTOs em entidades usando o serviço especialista
-        List<ItemPedido> itens = itensDTO.stream()
-            .map(dto -> itemPedidoService.criarEntidadeItem(dto, pedido))
-            .toList();
-        
-        pedido.setItens(itens);
-        
-        // 3. Calcula o total (Regra de negócio do Pedido)
-        BigDecimal total = itens.stream()
-            .map(i -> i.getPrecoUnitario().multiply(BigDecimal.valueOf(i.getQuantidade())))
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-        pedido.setValorTotal(total);
+        BigDecimal valorTotalPedido = BigDecimal.ZERO;
 
-        // 4. Salva no banco (Sales Schema)[cite: 4]
-        Pedido pedidoSalvo = pedidoRepository.save(pedido);
+        for (ItemPedidoRequestDTO itemDto : request.itens()) {
 
-        // 5. DISPARO DE EVENTO (Outbox Pattern)
-        // Isso vai para sua tabela event_publication para que o módulo 
-        // de Catálogo saiba que precisa diminuir o estoque.
-        eventPublisher.publishEvent(new PedidoCriadoEvent(pedidoSalvo.getId(),pedidoSalvo.getItens()));
+            ResultadoPadrao<Boolean> validacaoEstoque = catalogoEstoqueAPI.verificarEstoque(
+                    itemDto.variacaoId(),
+                    itemDto.quantidade()
+            );
 
-        return converterParaDTO(pedidoSalvo);
+            if (!validacaoEstoque.isValid()) {
+                throw new RuntimeException("Falha no checkout para o item " + itemDto.variacaoId() + ": " + validacaoEstoque.failureReason());
+            }
+
+            ResultadoPadrao<?> baixaEstoque = catalogoEstoqueAPI.baixarEstoque(itemDto.variacaoId(), itemDto.quantidade());
+            if (!baixaEstoque.isValid()) {
+                throw new RuntimeException("Erro ao deduzir estoque: " + baixaEstoque.failureReason());
+            }
+
+            ItemPedido itemPedido = new ItemPedido();
+            itemPedido.setVariacaoId(itemDto.variacaoId());
+            itemPedido.setQuantidade(itemDto.quantidade());
+            itemPedido.setPrecoUnitario(itemDto.precoUnitario());
+
+            pedido.adicionarItem(itemPedido);
+
+            BigDecimal subtotalItem = itemDto.precoUnitario().multiply(BigDecimal.valueOf(itemDto.quantidade()));
+            valorTotalPedido = valorTotalPedido.add(subtotalItem);
+        }
+
+        pedido.setValorTotal(valorTotalPedido);
+        pedido = pedidoRepository.save(pedido);
+
+        // 5. TODO: Disparar PedidoCriadoEvent via ApplicationEventPublisher (Passo 3 do gráfico)
+        // exemplo: eventPublisher.publishEvent(new PedidoCriadoEvent(pedido.getId(), pedido.getClienteId(), pedido.getValorTotal()));
+
+        return pedidoMapper.toCriadoResponse(pedido);
     }
-    */
+
+    public List<PedidoDetalhadoResponseDTO> listarTodos() {
+        List<Pedido> pedidos = pedidoRepository.findAll();
+
+        // Para cada pedido:
+        // 1. Busca os dados do cliente no IAM usando o clienteId
+        // 2. Busca os dados das variações envolvidas no Catalog
+        // 3. Monta e mapeia para PedidoDetalhadoResponseDTO
+
+        return List.of();
+    }
 }

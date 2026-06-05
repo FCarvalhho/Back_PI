@@ -1,7 +1,7 @@
 package com.senai.PI_mecado_preso.catalog.internal.service;
 
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoRequestDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoResponseDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoRequestDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoResponseDTO;
 import com.senai.PI_mecado_preso.catalog.internal.entity.Atributo;
 import com.senai.PI_mecado_preso.catalog.internal.entity.Produto;
 import com.senai.PI_mecado_preso.catalog.internal.entity.ProdutoAtributo;
@@ -49,22 +49,12 @@ public class ProdutoService {
     }
 
     @Transactional
-    public ProdutoResponseDTO salvar (ProdutoRequestDTO dto){
+    public ProdutoResponseDTO salvar(ProdutoRequestDTO dto){
         Produto produto = mapper.toEntity(dto);
         produto.setAtributos(new ArrayList<>());
 
         if (dto.atributosIds() != null && !dto.atributosIds().isEmpty()) {
-            for (UUID atributoId : dto.atributosIds()) {
-
-                Atributo atributo = atributoRepository.findById(atributoId)
-                        .orElseThrow(() -> new RuntimeException("Atributo não encontrado: " + atributoId));
-
-                ProdutoAtributo produtoAtributo = new ProdutoAtributo();
-                produtoAtributo.setProduto(produto);
-                produtoAtributo.setAtributo(atributo);
-
-                produto.getAtributos().add(produtoAtributo);
-            }
+            vincularAtributos(produto, dto.atributosIds());
         }
 
         produto = repository.save(produto);
@@ -75,20 +65,11 @@ public class ProdutoService {
     public ProdutoResponseDTO atualizar(UUID id, ProdutoRequestDTO dto){
         Produto produto = buscarEntityPorId(id);
         mapper.updateEntityFromDto(dto, produto);
+
         produto.getAtributos().clear();
 
         if (dto.atributosIds() != null && !dto.atributosIds().isEmpty()) {
-            for (UUID atributoId : dto.atributosIds()) {
-
-                Atributo atributo = atributoRepository.findById(atributoId)
-                        .orElseThrow(() -> new RuntimeException("Atributo não encontrado: " + atributoId));
-
-                ProdutoAtributo produtoAtributo = new ProdutoAtributo();
-                produtoAtributo.setProduto(produto);
-                produtoAtributo.setAtributo(atributo);
-
-                produto.getAtributos().add(produtoAtributo);
-            }
+            vincularAtributos(produto, dto.atributosIds());
         }
 
         produto = repository.save(produto);
@@ -96,10 +77,23 @@ public class ProdutoService {
     }
 
     @Transactional
-    public void deletar (UUID id){
+    public void deletar(UUID id){
         Produto produto = buscarEntityPorId(id);
         produto.setAtivo(false);
         repository.save(produto);
+    }
+
+    private void vincularAtributos(Produto produto, List<UUID> atributosIds) {
+        for (UUID atributoId : atributosIds) {
+            Atributo atributo = atributoRepository.findById(atributoId)
+                    .orElseThrow(() -> new RuntimeException("Atributo não encontrado: " + atributoId));
+
+            ProdutoAtributo produtoAtributo = new ProdutoAtributo();
+            produtoAtributo.setProduto(produto);
+            produtoAtributo.setAtributo(atributo);
+
+            produto.getAtributos().add(produtoAtributo);
+        }
     }
 
 }

@@ -39,7 +39,7 @@ public class ClienteController {
     }
 
     @PostMapping
-    public ResponseEntity<ClienteResponseDTO> registrarCliente(@RequestBody ClienteRequestDTO dto) {
+    public ResponseEntity<ClienteResponseDTO> registrarCliente(@Valid @RequestBody ClienteRequestDTO dto) {
         return ResponseEntity.ok(service.salvar(dto));
     }
 
@@ -49,7 +49,7 @@ public class ClienteController {
     }
 
     @PatchMapping("/{id}/delete")
-    public ResponseEntity<Void> alterarStatus(@PathVariable @Valid UUID id) {
+    public ResponseEntity<Void> alterarStatus(@PathVariable UUID id) {
         service.deletar(id);
         return ResponseEntity.noContent().build();
     }

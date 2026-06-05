@@ -1,8 +1,8 @@
 package com.senai.PI_mecado_preso.catalog.internal.mapper;
 
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoVariacaoIDsDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoVariacaoRequestDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoVariacaoResponseDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoIDsDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoRequestDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoResponseDTO;
 import com.senai.PI_mecado_preso.catalog.internal.entity.ProdutoVariacao;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

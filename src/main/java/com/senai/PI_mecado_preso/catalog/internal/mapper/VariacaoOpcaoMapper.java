@@ -1,6 +1,6 @@
 package com.senai.PI_mecado_preso.catalog.internal.mapper;
 
-import com.senai.PI_mecado_preso.catalog.api.dto.VariacaoOpcaoResponseDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.VariacaoOpcaoResponseDTO;
 import com.senai.PI_mecado_preso.catalog.internal.entity.VariacaoOpcao;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

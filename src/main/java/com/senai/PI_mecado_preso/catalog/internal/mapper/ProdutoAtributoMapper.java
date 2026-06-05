@@ -1,6 +1,6 @@
 package com.senai.PI_mecado_preso.catalog.internal.mapper;
 
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoAtributoResponseDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoAtributoResponseDTO;
 import com.senai.PI_mecado_preso.catalog.internal.entity.ProdutoAtributo;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

@@ -1,11 +1,8 @@
 package com.senai.PI_mecado_preso.catalog.internal.service;
 
-import com.senai.PI_mecado_preso.catalog.api.dto.AtributoRequestDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.AtributoResponseDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoRequestDTO;
-import com.senai.PI_mecado_preso.catalog.api.dto.ProdutoResponseDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.AtributoRequestDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.AtributoResponseDTO;
 import com.senai.PI_mecado_preso.catalog.internal.entity.Atributo;
-import com.senai.PI_mecado_preso.catalog.internal.entity.Produto;
 import com.senai.PI_mecado_preso.catalog.internal.mapper.AtributoMapper;
 import com.senai.PI_mecado_preso.catalog.internal.repository.AtributoRepository;
 import org.springframework.stereotype.Service;
