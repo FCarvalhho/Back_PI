@@ -4,14 +4,17 @@
  */
 package com.senai.PI_mecado_preso.billing.internal.service;
 
-import com.senai.PI_mecado_preso.billing.api.dtos.PagamentoRequestDTO;
-import com.senai.PI_mecado_preso.billing.api.dtos.PagamentoResponseDTO;
+import com.senai.PI_mecado_preso.billing.api.PagamentoPublicoAPi;
 import com.senai.PI_mecado_preso.billing.internal.entity.Pagamento;
 import com.senai.PI_mecado_preso.billing.internal.mapper.PagamentoMapper;
 import com.senai.PI_mecado_preso.billing.internal.repository.PagamentoRepository;
+
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @author a
  */
 @Service
-public class PagamentoService {
+public class PagamentoService implements PagamentoPublicoAPi {
 
     private final PagamentoRepository pagamentoRepository;
     private final PagamentoMapper pagamentoMapper;
@@ -33,50 +36,8 @@ public class PagamentoService {
         this.eventPublisher = eventPublisher;
     }
 
-    @Transactional(readOnly = true)
-    public List<PagamentoResponseDTO> listarTodos() {
-        return pagamentoRepository.findAll().stream()
-                .map(pagamentoMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public Pagamento buscarEntityPorId(UUID id) {
-        return pagamentoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pagamento não encontrado"));
-    }
-
-    @Transactional(readOnly = true)
-    public PagamentoResponseDTO buscarPorId(UUID id) {
-        return pagamentoMapper.toResponse(buscarEntityPorId(id));
-    }
-
-    @Transactional
-    public PagamentoResponseDTO salvarPagamento(PagamentoRequestDTO request) {
-        Pagamento pagamento = pagamentoMapper.toEntity(request);
-        Pagamento salvo = pagamentoRepository.save(pagamento);
-
-        // Dispara o evento para o Modulith (ex: Sales escutar e baixar estoque)
-        eventPublisher.publishEvent(pagamentoMapper.toEvent(salvo));
-
-        return pagamentoMapper.toResponse(salvo);
-    }
-
-    @Transactional
-    public PagamentoResponseDTO atualizarPagamento(UUID id, PagamentoRequestDTO request) {
-        Pagamento existente = buscarEntityPorId(id);
-        pagamentoMapper.updateEntityFromDto(request, existente);
-
-        Pagamento atualizado = pagamentoRepository.save(existente);
-
-        // Se a atualização mudar o status, você pode disparar o evento novamente aqui
-        eventPublisher.publishEvent(pagamentoMapper.toEvent(atualizado));
-
-        return pagamentoMapper.toResponse(atualizado);
-    }
-
-    @Transactional
-    public void deletar(UUID id) {
-        pagamentoRepository.delete(buscarEntityPorId(id));
+    @Override
+    public ResultadoPadrao<Boolean> pagamentoPublico(UUID variacaoId, BigDecimal valor) {
+        return null;
     }
 }

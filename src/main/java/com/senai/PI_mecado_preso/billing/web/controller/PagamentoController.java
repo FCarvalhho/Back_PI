@@ -4,8 +4,6 @@
  */
 package com.senai.PI_mecado_preso.billing.web.controller;
 
-import com.senai.PI_mecado_preso.billing.api.dtos.PagamentoRequestDTO;
-import com.senai.PI_mecado_preso.billing.api.dtos.PagamentoResponseDTO;
 import com.senai.PI_mecado_preso.billing.internal.service.PagamentoService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -35,30 +33,4 @@ public class PagamentoController {
         this.service = service;
     }
 
-    @GetMapping
-    public ResponseEntity<List<PagamentoResponseDTO>> listarTodos() {
-        return ResponseEntity.ok(service.listarTodos());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<PagamentoResponseDTO> buscarPorId(@PathVariable UUID id) {
-        return ResponseEntity.ok(service.buscarPorId(id));
-    }
-
-    @PostMapping
-    public ResponseEntity<PagamentoResponseDTO> criar(@RequestBody @Valid PagamentoRequestDTO request) {
-        PagamentoResponseDTO salvo = service.salvarPagamento(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<PagamentoResponseDTO> atualizar(@PathVariable UUID id, @RequestBody @Valid PagamentoRequestDTO request) {
-        return ResponseEntity.ok(service.atualizarPagamento(id, request));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable UUID id) {
-        service.deletar(id);
-        return ResponseEntity.noContent().build();
-    }
 }

@@ -17,3 +17,4 @@ CREATE TABLE billing.pagamento (
     metodo VARCHAR(50),
     pago_em TIMESTAMP
 );
+

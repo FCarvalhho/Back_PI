@@ -47,7 +47,6 @@ public class CarrinhoService {
                     return novo;
                 });
 
-        // Chama o método interno da entidade Carrinho usando os nomes corrigidos
         carrinho.adicionarItem(dto.variacaoId(), dto.quantidade());
         carrinhoRepository.save(carrinho);
     }
