@@ -1,12 +1,15 @@
 package com.senai.PI_mecado_preso.sales.internal.service;
 
+import com.senai.PI_mecado_preso.billing.api.CobrancaRequestDTO;
+import com.senai.PI_mecado_preso.billing.api.CobrancaResponseDTO;
+import com.senai.PI_mecado_preso.billing.api.PagamentoPublicaAPI;
 import com.senai.PI_mecado_preso.catalog.api.CatalogoPublicaAPI;
 import com.senai.PI_mecado_preso.iam.api.IamPublicaApi;
 import com.senai.PI_mecado_preso.sales.api.dtos.*;
-import com.senai.PI_mecado_preso.sales.internal.entity.Pedido;
 import com.senai.PI_mecado_preso.sales.internal.entity.ItemPedido;
-import com.senai.PI_mecado_preso.sales.internal.repository.PedidoRepository;
+import com.senai.PI_mecado_preso.sales.internal.entity.Pedido;
 import com.senai.PI_mecado_preso.sales.internal.mapper.PedidoMapper;
+import com.senai.PI_mecado_preso.sales.internal.repository.PedidoRepository;
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,16 +26,23 @@ public class PedidoService {
     private final PedidoMapper pedidoMapper;
     private final IamPublicaApi iamPublicAPI;
     private final CatalogoPublicaAPI catalogoEstoqueAPI;
+    private final PagamentoPublicaAPI pagamentoPublicaAPI;
 
-    public PedidoService(PedidoRepository pedidoRepository, PedidoMapper pedidoMapper, IamPublicaApi iamPublicAPI, CatalogoPublicaAPI catalogoEstoqueAPI) {
+    public PedidoService(PedidoRepository pedidoRepository,
+                         PedidoMapper pedidoMapper,
+                         IamPublicaApi iamPublicAPI,
+                         CatalogoPublicaAPI catalogoEstoqueAPI,
+                         PagamentoPublicaAPI pagamentoPublicaAPI) {
         this.pedidoRepository = pedidoRepository;
         this.pedidoMapper = pedidoMapper;
         this.iamPublicAPI = iamPublicAPI;
         this.catalogoEstoqueAPI = catalogoEstoqueAPI;
+        this.pagamentoPublicaAPI = pagamentoPublicaAPI;
     }
 
     @Transactional
-    public PedidoCriadoResponseDTO criarPedido(PedidoRequestDTO request) {
+    public CheckoutResponseDTO criarPedido(PedidoRequestDTO request) {
+
         ResultadoPadrao<?> validacaoIam = iamPublicAPI.validarUsuario(request.clienteId());
         if (!validacaoIam.isValid()) {
             throw new RuntimeException("Falha no checkout: " + validacaoIam.failureReason());
@@ -45,12 +55,7 @@ public class PedidoService {
         BigDecimal valorTotalPedido = BigDecimal.ZERO;
 
         for (ItemPedidoRequestDTO itemDto : request.itens()) {
-
-            ResultadoPadrao<Boolean> validacaoEstoque = catalogoEstoqueAPI.verificarEstoque(
-                    itemDto.variacaoId(),
-                    itemDto.quantidade()
-            );
-
+            ResultadoPadrao<Boolean> validacaoEstoque = catalogoEstoqueAPI.verificarEstoque(itemDto.variacaoId(), itemDto.quantidade());
             if (!validacaoEstoque.isValid()) {
                 throw new RuntimeException("Falha no checkout para o item " + itemDto.variacaoId() + ": " + validacaoEstoque.failureReason());
             }
@@ -64,7 +69,6 @@ public class PedidoService {
             itemPedido.setVariacaoId(itemDto.variacaoId());
             itemPedido.setQuantidade(itemDto.quantidade());
             itemPedido.setPrecoUnitario(itemDto.precoUnitario());
-
             pedido.adicionarItem(itemPedido);
 
             BigDecimal subtotalItem = itemDto.precoUnitario().multiply(BigDecimal.valueOf(itemDto.quantidade()));
@@ -74,10 +78,43 @@ public class PedidoService {
         pedido.setValorTotal(valorTotalPedido);
         pedido = pedidoRepository.save(pedido);
 
-        // 5. TODO: Disparar PedidoCriadoEvent via ApplicationEventPublisher (Passo 3 do gráfico)
-        // exemplo: eventPublisher.publishEvent(new PedidoCriadoEvent(pedido.getId(), pedido.getClienteId(), pedido.getValorTotal()));
+        CobrancaRequestDTO cobrancaRequest = new CobrancaRequestDTO(
+                pedido.getId(),
+                pedido.getValorTotal(),
+                request.metodoPagamento(),
+                request.parcelas()
+        );
 
-        return pedidoMapper.toCriadoResponse(pedido);
+        final UUID pedidoIdSalvo = pedido.getId();
+
+        ResultadoPadrao<CobrancaResponseDTO> resultadoCobranca = pagamentoPublicaAPI.processarCobranca(cobrancaRequest).join();
+
+        if (resultadoCobranca == null || !resultadoCobranca.isValid()) {
+            throw new RuntimeException("Erro ao processar faturamento do pedido.");
+        }
+
+        CobrancaResponseDTO dadosCobranca = resultadoCobranca.dado();
+
+        if ("PAGO".equals(dadosCobranca.statusSugerido())) {
+            pedido.setStatus("APROVADO");
+        } else if ("FALHADO".equals(dadosCobranca.statusSugerido())) {
+            pedido.setStatus("CANCELADO");
+        } else {
+            pedido.setStatus("AGUARDANDO_PAGAMENTO");
+        }
+        pedidoRepository.save(pedido);
+
+
+        PedidoCriadoResponseDTO pedidoResponse = pedidoMapper.toCriadoResponse(pedido);
+
+        return new CheckoutResponseDTO(
+                pedidoResponse,
+                dadosCobranca.processadoSincronamente(),
+                dadosCobranca.statusSugerido(),
+                dadosCobranca.mensagem(),
+                dadosCobranca.pixCopiaECola(),
+                dadosCobranca.linhaDigitavel()
+        );
     }
 
     public List<PedidoDetalhadoResponseDTO> listarTodos() {
