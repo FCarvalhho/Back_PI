@@ -44,7 +44,7 @@ public class SecurityConfig {
                         // 2. Rotas Públicas
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/files/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/produtos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/produto/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/iam/cliente").permitAll()
 
                         // 3. Rotas de Catálogo - Ajustado para Authority Literal para evitar duplicidade de ROLE_
