@@ -7,6 +7,7 @@ import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -28,7 +29,6 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
                             ? ResultadoPadrao.success(true)
                             : ResultadoPadrao.<Boolean>failure("Estoque insuficiente para a variação informada. Disponível: " + variacao.getEstoque());
                 })
-                // CORREÇÃO AQUI: Damos uma dica ao compilador inserindo o <Boolean> antes do nome do método estático
                 .orElseGet(() -> ResultadoPadrao.<Boolean>failure("Produto/Variação não encontrada no catálogo."));
     }
 
@@ -49,5 +49,13 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
         variacaoRepository.save(variacao);
 
         return ResultadoPadrao.success();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResultadoPadrao<BigDecimal> obterPreco(UUID variacaoId) {
+        return variacaoRepository.findById(variacaoId)
+                .map(variacao -> ResultadoPadrao.success(variacao.getPreco()))
+                .orElseGet(() -> ResultadoPadrao.failure("Variação de produto não encontrada para consulta de valores."));
     }
 }

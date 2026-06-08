@@ -4,6 +4,7 @@
  */
 package com.senai.PI_mecado_preso.billing.internal.service;
 
+import com.senai.PI_mecado_preso.billing.api.PagamentoProcessadoEvent;
 import com.senai.PI_mecado_preso.billing.api.PagamentoPublicaAPI;
 import com.senai.PI_mecado_preso.billing.api.CobrancaRequestDTO;
 import com.senai.PI_mecado_preso.billing.api.CobrancaResponseDTO;
@@ -13,23 +14,30 @@ import com.senai.PI_mecado_preso.billing.internal.repository.PagamentoRepository
 import com.senai.PI_mecado_preso.billing.internal.strategy.EstrategiaPagamento;
 import com.senai.PI_mecado_preso.billing.internal.strategy.FabricaEstrategiaPagamento;
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 class PagamentoService implements PagamentoPublicaAPI {
 
     private final PagamentoRepository pagamentoRepository;
     private final FabricaEstrategiaPagamento fabricaEstrategia;
+    private final ApplicationEventPublisher eventPublisher;
+    private final TransactionTemplate transactionTemplate;
 
-    public PagamentoService(PagamentoRepository pagamentoRepository, FabricaEstrategiaPagamento fabricaEstrategia) {
+    public PagamentoService(PagamentoRepository pagamentoRepository, FabricaEstrategiaPagamento fabricaEstrategia, ApplicationEventPublisher eventPublisher, TransactionTemplate transactionTemplate) {
         this.pagamentoRepository = pagamentoRepository;
         this.fabricaEstrategia = fabricaEstrategia;
+        this.eventPublisher = eventPublisher;
+        this.transactionTemplate = transactionTemplate;
     }
 
     @Override
@@ -52,16 +60,25 @@ class PagamentoService implements PagamentoPublicaAPI {
         // 🌟 FLUXO ASSÍNCRONO: PIX E BOLETO
         if (metodo == MetodoPagamento.PIX || metodo == MetodoPagamento.BOLETO) {
             return CompletableFuture.supplyAsync(() -> {
-                // Executa a geração síncrona dos textos (BR Code / Linha digitável)
                 ResultadoPadrao<String> dadosGerados = estrategia.processar(pagamento);
 
                 String pixCodigo = (metodo == MetodoPagamento.PIX) ? dadosGerados.dado() : null;
                 String boletoLinha = (metodo == MetodoPagamento.BOLETO) ? dadosGerados.dado() : null;
 
-                // Simula o tempo assíncrono em background (Webhook/espera pelo pagamento do usuário)
+                // Simulação de Webhook/Liquidação assíncrona tardia
                 CompletableFuture.runAsync(() -> {
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(15000); // Cliente leva um tempo a pagar
+
+                        // 🌟 Executa a liquidação dentro de um bloco transacional limpo na thread background
+                        transactionTemplate.executeWithoutResult(status -> {
+                            Pagamento p = pagamentoRepository.findById(pagamento.getId()).orElseThrow();
+                            p.confirmar();
+                            pagamentoRepository.save(p);
+
+                            // Pix e Boleto sempre notificam via evento pois são 100% assíncronos
+                            eventPublisher.publishEvent(new PagamentoProcessadoEvent(request.pedidoId(), "PAGO"));
+                        });
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
@@ -79,41 +96,55 @@ class PagamentoService implements PagamentoPublicaAPI {
         }
 
         // 🌟 FLUXO SÍNCRONO NÃO-BLOQUEANTE: CARTÕES (CRÉDITO/DÉBITO)
-        // O supplyAsync empurra a execução pesada para o ForkJoinPool, liberando a thread do Tomcat imediatamente
+        // Guardamos o estado do timeout de forma segura entre as threads
+        final AtomicBoolean timeoutOcorreu = new AtomicBoolean(false);
+
         return CompletableFuture.supplyAsync(() -> {
                     ResultadoPadrao<String> resultadoGateway = estrategia.processar(pagamento);
 
-                    // Abre uma nova transação local na thread de background para persistir o veredito rápido do banco
-                    Pagamento pagamentoFinal = pagamentoRepository.findById(pagamento.getId())
-                            .orElseThrow(() -> new IllegalStateException("Pagamento não encontrado: " + pagamento.getId()));
+                    // 🌟 Encapsulamos a lógica numa transação programática para o Spring Modulith mapear corretamente
+                    return transactionTemplate.execute(status -> {
+                        Pagamento pagamentoFinal = pagamentoRepository.findById(pagamento.getId())
+                                .orElseThrow(() -> new IllegalStateException("Pagamento não encontrado: " + pagamento.getId()));
 
-                    if (resultadoGateway.isValid() && "APROVADO".equals(resultadoGateway.dado())) {
-                        pagamentoFinal.confirmar();
+                        String statusSugerido;
+                        if (resultadoGateway.isValid() && "APROVADO".equals(resultadoGateway.dado())) {
+                            pagamentoFinal.confirmar();
+                            statusSugerido = "PAGO";
+                        } else {
+                            pagamentoFinal.falhar();
+                            statusSugerido = "FALHADO";
+                        }
+
                         pagamentoRepository.save(pagamentoFinal);
-                        return ResultadoPadrao.success(new CobrancaResponseDTO(true, "PAGO", "Cartão autorizado.", null, null));
-                    } else {
-                        pagamentoFinal.falhar();
-                        pagamentoRepository.save(pagamentoFinal);
-                        return ResultadoPadrao.success(new CobrancaResponseDTO(true, "FALHADO", resultadoGateway.failureReason(), null, null));
-                    }
+
+                        // 🔥 REQUISITO ESPECÍFICO: Só publica o evento se a thread principal já tiver estourado o timeout!
+                        if (timeoutOcorreu.get()) {
+                            eventPublisher.publishEvent(new PagamentoProcessadoEvent(request.pedidoId(), statusSugerido));
+                        }
+
+                        return ResultadoPadrao.success(new CobrancaResponseDTO(
+                                true,
+                                statusSugerido,
+                                statusSugerido.equals("PAGO") ? "Cartão autorizado." : resultadoGateway.failureReason(),
+                                null,
+                                null
+                        ));
+                    });
                 })
-                // Estabelece a janela de timeout de 3 segundos de forma reativa através do agendador global do Java
                 .orTimeout(3, TimeUnit.SECONDS)
-                // Intercepta e mitiga o estouro do tempo de rede sem afetar o servidor HTTP
                 .exceptionally(erro -> {
-                    // No pipeline assíncrono direto do CompletableFuture, o erro é jogado ou encapsulado como CompletionException/TimeoutException
                     if (erro instanceof TimeoutException || erro.getCause() instanceof TimeoutException) {
-                        CobrancaResponseDTO fallbackResponse = new CobrancaResponseDTO(
-                                false, // vira assíncrono como contingência
+                        // 🌟 O timeout aconteceu na thread HTTP principal! Ativamos a flag.
+                        timeoutOcorreu.set(true);
+                        return ResultadoPadrao.success(new CobrancaResponseDTO(
+                                false,
                                 "PENDENTE",
                                 "Processamento em background ativado devido a lentidão temporária do adquirente.",
                                 null,
                                 null
-                        );
-                        return ResultadoPadrao.success(fallbackResponse);
+                        ));
                     }
-
-                    // Fallback para falhas físicas críticas de conexão ou falta de banco
                     return ResultadoPadrao.failure("Erro de barramento ao tentar processar cartão de forma não-bloqueante.");
                 });
     }
