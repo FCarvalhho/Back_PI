@@ -55,9 +55,22 @@ public class PedidoService {
         BigDecimal valorTotalPedido = BigDecimal.ZERO;
 
         for (ItemPedidoRequestDTO itemDto : request.itens()) {
+
             ResultadoPadrao<Boolean> validacaoEstoque = catalogoEstoqueAPI.verificarEstoque(itemDto.variacaoId(), itemDto.quantidade());
             if (!validacaoEstoque.isValid()) {
                 throw new RuntimeException("Falha no checkout para o item " + itemDto.variacaoId() + ": " + validacaoEstoque.failureReason());
+            }
+
+            ResultadoPadrao<BigDecimal> consultaPreco = catalogoEstoqueAPI.obterPreco(itemDto.variacaoId());
+            if (!consultaPreco.isValid()) {
+                throw new RuntimeException("Falha na validação de preços: " + consultaPreco.failureReason());
+            }
+            BigDecimal precoOficialServidor = consultaPreco.dado();
+
+            if (itemDto.precoUnitario().compareTo(precoOficialServidor) != 0) {
+                throw new RuntimeException("🚨 Segurança: Divergência de preço detectada para a variação " + itemDto.variacaoId()
+                        + ". Valor enviado pelo cliente: R$ " + itemDto.precoUnitario()
+                        + " | Valor oficial do servidor: R$ " + precoOficialServidor);
             }
 
             ResultadoPadrao<?> baixaEstoque = catalogoEstoqueAPI.baixarEstoque(itemDto.variacaoId(), itemDto.quantidade());
@@ -68,10 +81,10 @@ public class PedidoService {
             ItemPedido itemPedido = new ItemPedido();
             itemPedido.setVariacaoId(itemDto.variacaoId());
             itemPedido.setQuantidade(itemDto.quantidade());
-            itemPedido.setPrecoUnitario(itemDto.precoUnitario());
+            itemPedido.setPrecoUnitario(precoOficialServidor);
             pedido.adicionarItem(itemPedido);
 
-            BigDecimal subtotalItem = itemDto.precoUnitario().multiply(BigDecimal.valueOf(itemDto.quantidade()));
+            BigDecimal subtotalItem = precoOficialServidor.multiply(BigDecimal.valueOf(itemDto.quantidade()));
             valorTotalPedido = valorTotalPedido.add(subtotalItem);
         }
 
@@ -84,8 +97,6 @@ public class PedidoService {
                 request.metodoPagamento(),
                 request.parcelas()
         );
-
-        final UUID pedidoIdSalvo = pedido.getId();
 
         ResultadoPadrao<CobrancaResponseDTO> resultadoCobranca = pagamentoPublicaAPI.processarCobranca(cobrancaRequest).join();
 
@@ -102,11 +113,10 @@ public class PedidoService {
         } else {
             pedido.setStatus("AGUARDANDO_PAGAMENTO");
         }
-        pedidoRepository.save(pedido);
 
+        pedido = pedidoRepository.saveAndFlush(pedido);
 
         PedidoCriadoResponseDTO pedidoResponse = pedidoMapper.toCriadoResponse(pedido);
-
         return new CheckoutResponseDTO(
                 pedidoResponse,
                 dadosCobranca.processadoSincronamente(),
