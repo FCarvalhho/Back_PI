@@ -24,7 +24,7 @@ public class UsuarioService implements UserDetailsService, IamPublicaApi {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Usuario usuario = repository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + username));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com o e-mail: " + username));
 
         return new UsuarioLogadoDTO(
                 usuario.getId(),

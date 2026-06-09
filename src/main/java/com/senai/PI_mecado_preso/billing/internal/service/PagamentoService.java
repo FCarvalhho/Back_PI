@@ -14,6 +14,8 @@ import com.senai.PI_mecado_preso.billing.internal.repository.PagamentoRepository
 import com.senai.PI_mecado_preso.billing.internal.strategy.EstrategiaPagamento;
 import com.senai.PI_mecado_preso.billing.internal.strategy.FabricaEstrategiaPagamento;
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
+import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
+import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -48,14 +50,14 @@ class PagamentoService implements PagamentoPublicaAPI {
         try {
             metodo = MetodoPagamento.valueOf(request.metodoPagamento().toUpperCase());
         } catch (IllegalArgumentException | NullPointerException e) {
-            return CompletableFuture.completedFuture(ResultadoPadrao.failure("Método de pagamento não suportado."));
+           throw new RegraDeNegocioException("Método de pagamento '" + request.metodoPagamento() + "' não é suportado pelo sistema.");
         }
 
         Pagamento pagamentoInicial = new Pagamento(request.pedidoId(), request.valor(), metodo, request.parcelas());
         final Pagamento pagamento = pagamentoRepository.save(pagamentoInicial);
 
         EstrategiaPagamento estrategia = fabricaEstrategia.obterEstrategia(metodo)
-                .orElseThrow(() -> new IllegalStateException("Estratégia não cadastrada."));
+                .orElseThrow(() -> new RegraDeNegocioException("Estratégia de gateway de pagamento não configurada para o método: " + metodo));
 
         // 🌟 FLUXO ASSÍNCRONO: PIX E BOLETO
         if (metodo == MetodoPagamento.PIX || metodo == MetodoPagamento.BOLETO) {
@@ -105,7 +107,7 @@ class PagamentoService implements PagamentoPublicaAPI {
                     // 🌟 Encapsulamos a lógica numa transação programática para o Spring Modulith mapear corretamente
                     return transactionTemplate.execute(status -> {
                         Pagamento pagamentoFinal = pagamentoRepository.findById(pagamento.getId())
-                                .orElseThrow(() -> new IllegalStateException("Pagamento não encontrado: " + pagamento.getId()));
+                                .orElseThrow(() -> new RecursoNaoEncontradoException("Transação de pagamento não encontrada com o ID: " + pagamento.getId()));
 
                         String statusSugerido;
                         if (resultadoGateway.isValid() && "APROVADO".equals(resultadoGateway.dado())) {
@@ -145,7 +147,7 @@ class PagamentoService implements PagamentoPublicaAPI {
                                 null
                         ));
                     }
-                    return ResultadoPadrao.failure("Erro de barramento ao tentar processar cartão de forma não-bloqueante.");
+                    throw new RegraDeNegocioException("Erro de barramento ao tentar processar cartão de forma não-bloqueante.");
                 });
     }
 }

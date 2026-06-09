@@ -10,6 +10,7 @@ import com.senai.PI_mecado_preso.iam.internal.entity.Funcionario;
 import com.senai.PI_mecado_preso.iam.internal.entity.Role;
 import com.senai.PI_mecado_preso.iam.internal.mapper.FuncionarioMapper;
 import com.senai.PI_mecado_preso.iam.internal.repository.FuncionarioRepository;
+import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +46,7 @@ public class FuncionarioService {
     @Transactional(readOnly = true)
     public Funcionario buscarEntityPorId(UUID id) {
         return repositoryFuncionario.findById(id)
-                .orElseThrow(() -> new RuntimeException("nao encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Funcionário não encontrado com o ID: " + id));
     }
 
     @Transactional(readOnly = true)

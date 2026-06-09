@@ -11,6 +11,7 @@ import com.senai.PI_mecado_preso.catalog.internal.entity.VariacaoOpcao;
 import com.senai.PI_mecado_preso.catalog.internal.mapper.ProdutoVariacaoMapper;
 import com.senai.PI_mecado_preso.catalog.internal.repository.AtributoRepository;
 import com.senai.PI_mecado_preso.catalog.internal.repository.ProdutoVariacaoRepository;
+import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +45,7 @@ public class ProdutoVariacaoService{
     @Transactional(readOnly = true)
     public ProdutoVariacao buscarEntityPorId(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Variação não encontrada com o ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Variação não encontrada com o ID: " + id));
     }
 
     @Transactional(readOnly = true)
@@ -83,6 +84,9 @@ public class ProdutoVariacaoService{
 
     @Transactional
     public void deletar(UUID id){
+        if (!repository.existsById(id)) {
+            throw new RecursoNaoEncontradoException("Não foi possível deletar. Variação não encontrada com o ID: " + id);
+        }
         repository.deleteById(id);
     }
 
@@ -91,7 +95,7 @@ public class ProdutoVariacaoService{
 
         for (VariacaoOpcaoRequestDTO opcao : opcoesDto){
             Atributo atributo = atributoRepository.findById(opcao.atributoId())
-                    .orElseThrow(() -> new RuntimeException("Atributo não encontrado: " + opcao.atributoId()));
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Não foi possível processar opção. Atributo não encontrado com o ID: " + opcao.atributoId()));
 
             VariacaoOpcao variacaoOpcao = new VariacaoOpcao();
             variacaoOpcao.setVariacao(produtoVariacao);
