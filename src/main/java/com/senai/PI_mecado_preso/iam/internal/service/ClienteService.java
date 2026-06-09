@@ -10,6 +10,7 @@ import com.senai.PI_mecado_preso.iam.internal.entity.Cliente;
 import com.senai.PI_mecado_preso.iam.internal.entity.Role;
 import com.senai.PI_mecado_preso.iam.internal.mapper.ClienteMapper;
 import com.senai.PI_mecado_preso.iam.internal.repository.ClienteRepository;
+import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +44,8 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public Cliente buscarEntityPorId(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("nao encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado com o ID: " + id));
+    
     }
 
     @Transactional(readOnly = true)
@@ -66,7 +68,7 @@ public class ClienteService {
     @Transactional
     public ClienteResponseDTO atualizar(UUID id, ClienteRequestDTO request) {
         Cliente existente = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Não foi possível atualizar. Cliente não encontrado com o ID: " + id));
 
         mapper.updateEntityFromDto(request, existente);
 

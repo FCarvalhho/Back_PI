@@ -5,6 +5,7 @@ import com.senai.PI_mecado_preso.catalog.api.dtos.AtributoResponseDTO;
 import com.senai.PI_mecado_preso.catalog.internal.entity.Atributo;
 import com.senai.PI_mecado_preso.catalog.internal.mapper.AtributoMapper;
 import com.senai.PI_mecado_preso.catalog.internal.repository.AtributoRepository;
+import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +34,7 @@ public class AtributoService {
     @Transactional(readOnly = true)
     public Atributo buscarEntityPorId(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("arrumar aqui com exception global"));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("arrumar aqui com exception global"));
     }
 
     @Transactional(readOnly = true)
@@ -56,9 +57,11 @@ public class AtributoService {
         return mapper.toResponse(salvo);
     }
 
-    //preciso de uma validacao aqui depois
     @Transactional
     public void deletar (UUID id){
+        if (!repository.existsById(id)) {
+            throw new RecursoNaoEncontradoException("Não foi possível deletar. Atributo não encontrado com o ID: " + id);
+        }
         repository.deleteById(id);
     }
 }

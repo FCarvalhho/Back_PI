@@ -8,6 +8,7 @@ import com.senai.PI_mecado_preso.iam.api.dtos.LoginRequest;
 import com.senai.PI_mecado_preso.iam.api.dtos.TokenResponse;
 import com.senai.PI_mecado_preso.iam.internal.repository.UsuarioRepository;
 import com.senai.PI_mecado_preso.shared.config.security.JwtService;
+import com.senai.PI_mecado_preso.shared.exception.NaoAutenticadoException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -46,7 +47,7 @@ public class AuthenticationService {
         );
 
         var usuario = usuarioRepository.findByEmail(request.username())
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new NaoAutenticadoException("Credenciais inválidas. Usuário não encontrado no sistema."));
 
         String jwtToken = jwtService.generateToken(usuario);
 

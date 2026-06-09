@@ -8,6 +8,7 @@ import com.senai.PI_mecado_preso.catalog.internal.entity.ProdutoAtributo;
 import com.senai.PI_mecado_preso.catalog.internal.mapper.ProdutoMapper;
 import com.senai.PI_mecado_preso.catalog.internal.repository.AtributoRepository;
 import com.senai.PI_mecado_preso.catalog.internal.repository.ProdutoRepository;
+import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +41,7 @@ public class ProdutoService {
     @Transactional(readOnly = true)
     public Produto buscarEntityPorId(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Produto não encontrado com o ID: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("arrumar aqui com exception global"));
     }
 
     @Transactional(readOnly = true)
@@ -86,7 +87,7 @@ public class ProdutoService {
     private void vincularAtributos(Produto produto, List<UUID> atributosIds) {
         for (UUID atributoId : atributosIds) {
             Atributo atributo = atributoRepository.findById(atributoId)
-                    .orElseThrow(() -> new RuntimeException("Atributo não encontrado: " + atributoId));
+                    .orElseThrow(() -> new RecursoNaoEncontradoException("Atributo não encontrado: " + atributoId));
 
             ProdutoAtributo produtoAtributo = new ProdutoAtributo();
             produtoAtributo.setProduto(produto);
