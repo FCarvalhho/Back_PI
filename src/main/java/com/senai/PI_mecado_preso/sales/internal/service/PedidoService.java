@@ -11,6 +11,7 @@ import com.senai.PI_mecado_preso.sales.internal.entity.Pedido;
 import com.senai.PI_mecado_preso.sales.internal.mapper.PedidoMapper;
 import com.senai.PI_mecado_preso.sales.internal.repository.PedidoRepository;
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
+import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +46,7 @@ public class PedidoService {
 
         ResultadoPadrao<?> validacaoIam = iamPublicAPI.validarUsuario(request.clienteId());
         if (!validacaoIam.isValid()) {
-            throw new RuntimeException("Falha no checkout: " + validacaoIam.failureReason());
+            throw new RegraDeNegocioException("Falha no checkout: " + validacaoIam.failureReason());
         }
 
         Pedido pedido = new Pedido();
@@ -58,24 +59,24 @@ public class PedidoService {
 
             ResultadoPadrao<Boolean> validacaoEstoque = catalogoEstoqueAPI.verificarEstoque(itemDto.variacaoId(), itemDto.quantidade());
             if (!validacaoEstoque.isValid()) {
-                throw new RuntimeException("Falha no checkout para o item " + itemDto.variacaoId() + ": " + validacaoEstoque.failureReason());
+                throw new RegraDeNegocioException("Falha no checkout para o item " + itemDto.variacaoId() + ": " + validacaoEstoque.failureReason());
             }
 
             ResultadoPadrao<BigDecimal> consultaPreco = catalogoEstoqueAPI.obterPreco(itemDto.variacaoId());
             if (!consultaPreco.isValid()) {
-                throw new RuntimeException("Falha na validação de preços: " + consultaPreco.failureReason());
+                throw new RegraDeNegocioException("Falha na validação de preços: " + consultaPreco.failureReason());
             }
             BigDecimal precoOficialServidor = consultaPreco.dado();
 
             if (itemDto.precoUnitario().compareTo(precoOficialServidor) != 0) {
-                throw new RuntimeException("🚨 Segurança: Divergência de preço detectada para a variação " + itemDto.variacaoId()
+                throw new RegraDeNegocioException("🚨 Segurança: Divergência de preço detectada para a variação " + itemDto.variacaoId()
                         + ". Valor enviado pelo cliente: R$ " + itemDto.precoUnitario()
                         + " | Valor oficial do servidor: R$ " + precoOficialServidor);
             }
 
             ResultadoPadrao<?> baixaEstoque = catalogoEstoqueAPI.baixarEstoque(itemDto.variacaoId(), itemDto.quantidade());
             if (!baixaEstoque.isValid()) {
-                throw new RuntimeException("Erro ao deduzir estoque: " + baixaEstoque.failureReason());
+                throw new RegraDeNegocioException("Erro ao deduzir estoque: " + baixaEstoque.failureReason());
             }
 
             ItemPedido itemPedido = new ItemPedido();
@@ -101,7 +102,7 @@ public class PedidoService {
         ResultadoPadrao<CobrancaResponseDTO> resultadoCobranca = pagamentoPublicaAPI.processarCobranca(cobrancaRequest).join();
 
         if (resultadoCobranca == null || !resultadoCobranca.isValid()) {
-            throw new RuntimeException("Erro ao processar faturamento do pedido.");
+            throw new RegraDeNegocioException("Erro ao processar faturamento do pedido.");
         }
 
         CobrancaResponseDTO dadosCobranca = resultadoCobranca.dado();

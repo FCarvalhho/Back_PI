@@ -8,6 +8,7 @@ import com.senai.PI_mecado_preso.sales.internal.mapper.CarrinhoMapper;
 import com.senai.PI_mecado_preso.sales.internal.repository.CarrinhoRepository;
 import com.senai.PI_mecado_preso.shared.config.security.UsuarioLogadoDTO;
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
+import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +33,7 @@ public class CarrinhoService {
 
         ResultadoPadrao<Boolean> validacaoEstoque = catalogoPublicaAPI.verificarEstoque(dto.variacaoId(), dto.quantidade());
         if (!validacaoEstoque.isValid()) {
-            throw new RuntimeException("Não foi possível adicionar ao carrinho: " + validacaoEstoque.failureReason());
+            throw new RegraDeNegocioException("Não foi possível adicionar ao carrinho: " + validacaoEstoque.failureReason());
         }
 
         UsuarioLogadoDTO principal = (UsuarioLogadoDTO) SecurityContextHolder.getContext()

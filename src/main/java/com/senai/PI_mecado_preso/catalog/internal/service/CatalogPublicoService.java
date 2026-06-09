@@ -4,6 +4,7 @@ import com.senai.PI_mecado_preso.catalog.api.CatalogoPublicaAPI;
 import com.senai.PI_mecado_preso.catalog.internal.entity.ProdutoVariacao;
 import com.senai.PI_mecado_preso.catalog.internal.repository.ProdutoVariacaoRepository;
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
+import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,17 +30,14 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
                             ? ResultadoPadrao.success(true)
                             : ResultadoPadrao.<Boolean>failure("Estoque insuficiente para a variação informada. Disponível: " + variacao.getEstoque());
                 })
-                .orElseGet(() -> ResultadoPadrao.<Boolean>failure("Produto/Variação não encontrada no catálogo."));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Produto/Variação não encontrada no catálogo com o ID: " + variacaoId));
     }
 
     @Override
     @Transactional
     public ResultadoPadrao<?> baixarEstoque(UUID variacaoId, Integer quantity) { // Alinhado ao contrato da API
-        ProdutoVariacao variacao = variacaoRepository.findById(variacaoId).orElse(null);
-
-        if (variacao == null) {
-            return ResultadoPadrao.failure("Variação não encontrada.");
-        }
+        ProdutoVariacao variacao = variacaoRepository.findById(variacaoId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Variação de produto não encontrada para baixa com o ID: " + variacaoId));
 
         if (variacao.getEstoque() < quantity) {
             return ResultadoPadrao.failure("Falha ao baixar estoque: Saldo insuficiente.");
@@ -56,6 +54,6 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
     public ResultadoPadrao<BigDecimal> obterPreco(UUID variacaoId) {
         return variacaoRepository.findById(variacaoId)
                 .map(variacao -> ResultadoPadrao.success(variacao.getPreco()))
-                .orElseGet(() -> ResultadoPadrao.failure("Variação de produto não encontrada para consulta de valores."));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Variação não encontrada para consulta de valores com o ID: " + variacaoId));
     }
 }
