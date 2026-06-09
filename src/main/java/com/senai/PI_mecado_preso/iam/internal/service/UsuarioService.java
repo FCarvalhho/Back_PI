@@ -44,4 +44,5 @@ public class UsuarioService implements UserDetailsService, IamPublicaApi {
 
         return ResultadoPadrao.success();
     }
+
 }

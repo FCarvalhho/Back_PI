@@ -11,7 +11,7 @@ public record ProdutoRequestDTO(
         String nome,
 
         @Size(max = 2000, message = "A descrição do produto não pode ultrapassar 2000 caracteres")
-        String description,
+        String descricao,
 
         List<UUID> atributosIds
 ) {

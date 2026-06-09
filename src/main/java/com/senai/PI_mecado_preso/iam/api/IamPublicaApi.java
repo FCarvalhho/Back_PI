@@ -6,4 +6,5 @@ import java.util.UUID;
 
 public interface IamPublicaApi {
     ResultadoPadrao<?> validarUsuario(UUID usuarioId);
+
 }

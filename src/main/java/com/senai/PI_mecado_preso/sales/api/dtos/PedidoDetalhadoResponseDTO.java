@@ -1,5 +1,7 @@
 package com.senai.PI_mecado_preso.sales.api.dtos;
 
+import com.senai.PI_mecado_preso.iam.api.PedidoClienteExibicaoDTO;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;

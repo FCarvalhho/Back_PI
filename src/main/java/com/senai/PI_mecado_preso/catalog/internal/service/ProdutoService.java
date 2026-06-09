@@ -40,7 +40,7 @@ public class ProdutoService {
     @Transactional(readOnly = true)
     public Produto buscarEntityPorId(UUID id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("arrumar aqui com exception global"));
+                .orElseThrow(() -> new RuntimeException("Produto não encontrado com o ID: " + id));
     }
 
     @Transactional(readOnly = true)
