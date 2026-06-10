@@ -32,17 +32,19 @@ public class PedidoService {
     private final IamPublicaApi iamPublicAPI;
     private final CatalogoPublicaAPI catalogoEstoqueAPI;
     private final PagamentoPublicaAPI pagamentoPublicaAPI;
+    private final CarrinhoService carrinhoService;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          PedidoMapper pedidoMapper,
                          IamPublicaApi iamPublicAPI,
                          CatalogoPublicaAPI catalogoEstoqueAPI,
-                         PagamentoPublicaAPI pagamentoPublicaAPI) {
+                         PagamentoPublicaAPI pagamentoPublicaAPI, CarrinhoService carrinhoService) {
         this.pedidoRepository = pedidoRepository;
         this.pedidoMapper = pedidoMapper;
         this.iamPublicAPI = iamPublicAPI;
         this.catalogoEstoqueAPI = catalogoEstoqueAPI;
         this.pagamentoPublicaAPI = pagamentoPublicaAPI;
+        this.carrinhoService = carrinhoService;
     }
 
     @Transactional
@@ -165,6 +167,8 @@ public class PedidoService {
         }
 
         pedido = pedidoRepository.saveAndFlush(pedido);
+
+        this.carrinhoService.limparCarrinho();
 
         PedidoCriadoResponseDTO pedidoResponse =
                 pedidoMapper.toCriadoResponse(pedido);
