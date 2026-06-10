@@ -2,6 +2,7 @@ package com.senai.PI_mecado_preso.catalog.web.controller;
 
 import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoRequestDTO;
 import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoResponseDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoUpdateDTO;
 import com.senai.PI_mecado_preso.catalog.internal.service.ProdutoVariacaoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -38,7 +39,7 @@ public class ProdutoVariacaoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProdutoVariacaoResponseDTO> atualizar(@PathVariable UUID id, @Valid @RequestBody ProdutoVariacaoRequestDTO request) {
+    public ResponseEntity<ProdutoVariacaoResponseDTO> atualizar(@PathVariable UUID id, @Valid @RequestBody ProdutoVariacaoUpdateDTO request) {
         ProdutoVariacaoResponseDTO response = service.atualizar(id, request);
         return ResponseEntity.ok(response);
     }

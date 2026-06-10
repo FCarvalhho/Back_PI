@@ -1,9 +1,6 @@
 package com.senai.PI_mecado_preso.catalog.internal.service;
 
-import com.senai.PI_mecado_preso.catalog.api.dtos.ImagemVariacaoRequestDTO;
-import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoRequestDTO;
-import com.senai.PI_mecado_preso.catalog.api.dtos.ProdutoVariacaoResponseDTO;
-import com.senai.PI_mecado_preso.catalog.api.dtos.VariacaoOpcaoRequestDTO;
+import com.senai.PI_mecado_preso.catalog.api.dtos.*;
 import com.senai.PI_mecado_preso.catalog.internal.entity.Atributo;
 import com.senai.PI_mecado_preso.catalog.internal.entity.ImagemVariacao;
 import com.senai.PI_mecado_preso.catalog.internal.entity.ProdutoVariacao;
@@ -67,15 +64,30 @@ public class ProdutoVariacaoService{
     }
 
     @Transactional
-    public ProdutoVariacaoResponseDTO atualizar(UUID id, ProdutoVariacaoRequestDTO dto){
+    public ProdutoVariacaoResponseDTO atualizar(UUID id, ProdutoVariacaoUpdateDTO dto) {
         ProdutoVariacao produtoVariacao = buscarEntityPorId(id);
-        mapper.updateEntityFromDto(dto, produtoVariacao);
 
-        produtoVariacao.getOpcoes().clear();
-        produtoVariacao.getImagens().clear();
+        if (dto.sku() != null && !dto.sku().isBlank()) {
+            produtoVariacao.setSku(dto.sku());
+        }
+        if (dto.preco() != null) {
+            produtoVariacao.setPreco(dto.preco());
+        }
+        if (dto.estoque() != null) {
+            produtoVariacao.setEstoque(dto.estoque());
+        }
 
-        processarOpcoes(produtoVariacao, dto.opcoes());
-        processarImagens(produtoVariacao, dto.imagens());
+        if (dto.opcoes() != null && !dto.opcoes().isEmpty()) {
+            produtoVariacao.getOpcoes().clear();
+            repository.saveAndFlush(produtoVariacao);
+            processarOpcoes(produtoVariacao, dto.opcoes());
+        }
+
+        if (dto.imagens() != null && !dto.imagens().isEmpty()) {
+            produtoVariacao.getImagens().clear();
+            repository.saveAndFlush(produtoVariacao);
+            processarImagens(produtoVariacao, dto.imagens());
+        }
 
         produtoVariacao = repository.save(produtoVariacao);
         return mapper.toResponse(produtoVariacao);

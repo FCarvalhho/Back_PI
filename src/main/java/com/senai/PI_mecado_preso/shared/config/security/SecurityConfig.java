@@ -43,16 +43,19 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/error"
                         ).permitAll()
 
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/files/**").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/produto/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/iam/cliente").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN") // Adicionado caso use Patch para o delete
                         .requestMatchers(HttpMethod.DELETE, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
 
                         .requestMatchers(HttpMethod.GET, "/admin/vendas-geral").hasAnyAuthority("ROLE_FATURAMENTO", "ROLE_ADMIN")
