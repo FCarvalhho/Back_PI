@@ -1,6 +1,7 @@
 package com.senai.PI_mecado_preso.sales.internal.service;
 
 import com.senai.PI_mecado_preso.catalog.api.CatalogoPublicaAPI;
+import com.senai.PI_mecado_preso.catalog.api.DetalheItemCatalogoDTO;
 import com.senai.PI_mecado_preso.sales.api.dtos.CarrinhoResponseDTO;
 import com.senai.PI_mecado_preso.sales.api.dtos.ItemCarrinhoRequestDTO;
 import com.senai.PI_mecado_preso.sales.internal.entity.Carrinho;
@@ -9,10 +10,13 @@ import com.senai.PI_mecado_preso.sales.internal.repository.CarrinhoRepository;
 import com.senai.PI_mecado_preso.shared.config.security.UsuarioLogadoDTO;
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
 import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -31,15 +35,18 @@ public class CarrinhoService {
     @Transactional
     public void adicionarProdutoAoCarrinho(ItemCarrinhoRequestDTO dto) {
 
-        ResultadoPadrao<Boolean> validacaoEstoque = catalogoPublicaAPI.verificarEstoque(dto.variacaoId(), dto.quantidade());
-        if (!validacaoEstoque.isValid()) {
-            throw new RegraDeNegocioException("Não foi possível adicionar ao carrinho: " + validacaoEstoque.failureReason());
+        ResultadoPadrao<Map<UUID, DetalheItemCatalogoDTO>> resultado =
+                catalogoPublicaAPI.obterItens(
+                        Set.of(dto.variacaoId())
+                );
+
+        if (!resultado.isValid()) {
+            throw new RegraDeNegocioException(
+                    resultado.failureReason()
+            );
         }
 
-        UsuarioLogadoDTO principal = (UsuarioLogadoDTO) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
-
-        UUID clienteId = principal.getId();
+        UUID clienteId = obterClienteIdLogado();
 
         Carrinho carrinho = carrinhoRepository.findByClienteId(clienteId)
                 .orElseGet(() -> {
@@ -48,21 +55,69 @@ public class CarrinhoService {
                     return novo;
                 });
 
-        carrinho.adicionarItem(dto.variacaoId(), dto.quantidade());
+        carrinho.adicionarItem(
+                dto.variacaoId(),
+                dto.quantidade()
+        );
+
         carrinhoRepository.save(carrinho);
     }
 
     @Transactional(readOnly = true)
-    public CarrinhoResponseDTO mostrarCarrinho(){
-        UsuarioLogadoDTO principal = (UsuarioLogadoDTO) SecurityContextHolder.getContext()
-                .getAuthentication().getPrincipal();
+    public CarrinhoResponseDTO mostrarCarrinho() {
 
-        UUID clienteId = principal.getId();
-        Carrinho carrinho = carrinhoRepository.findByClienteId(clienteId).orElseGet(() -> {
-            Carrinho novo = new Carrinho();
-            novo.setClienteId(clienteId);
-            return novo;
-        });
+        UUID clienteId = obterClienteIdLogado();
+
+        Carrinho carrinho =
+                carrinhoRepository.findByClienteId(clienteId)
+                        .orElseGet(() -> {
+                            Carrinho novo = new Carrinho();
+                            novo.setClienteId(clienteId);
+                            return novo;
+                        });
+
         return mapper.toResponse(carrinho);
+    }
+
+    @Transactional
+    public void removerItemDoCarrinho(UUID variacaoId) {
+        UUID clienteId = obterClienteIdLogado();
+
+        Carrinho carrinho = carrinhoRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new RegraDeNegocioException(
+                        "Carrinho não encontrado para este cliente."
+                ));
+
+        carrinho.removerItem(variacaoId);
+        carrinhoRepository.save(carrinho);
+    }
+
+    @Transactional
+    public void limparCarrinho() {
+        UUID clienteId = obterClienteIdLogado();
+
+        Carrinho carrinho = carrinhoRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new RegraDeNegocioException(
+                        "Carrinho não encontrado para este cliente."
+                ));
+
+        carrinho.limparItens();
+        carrinhoRepository.save(carrinho);
+    }
+
+    private UUID obterClienteIdLogado() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || !(authentication.getPrincipal() instanceof UsuarioLogadoDTO principal)) {
+
+            throw new RegraDeNegocioException(
+                    "Usuário não autenticado."
+            );
+        }
+
+        return principal.getId();
     }
 }

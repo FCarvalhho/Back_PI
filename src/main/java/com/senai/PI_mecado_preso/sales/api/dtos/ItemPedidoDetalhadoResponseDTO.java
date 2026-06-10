@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public record ItemPedidoDetalhadoResponseDTO(
         UUID id,
-        PedidoVariacaoExibicaoDTO variacao, // Objeto enriquecido
+        PedidoVariacaoExibicaoDTO variacao,
         Integer quantidade,
         BigDecimal precoUnitario,
         BigDecimal subtotal

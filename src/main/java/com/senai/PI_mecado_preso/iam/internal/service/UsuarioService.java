@@ -1,6 +1,7 @@
 package com.senai.PI_mecado_preso.iam.internal.service;
 
 import com.senai.PI_mecado_preso.iam.api.IamPublicaApi;
+import com.senai.PI_mecado_preso.iam.api.PedidoUsuarioDTO;
 import com.senai.PI_mecado_preso.iam.internal.entity.Usuario;
 import com.senai.PI_mecado_preso.iam.internal.repository.UsuarioRepository;
 import com.senai.PI_mecado_preso.shared.config.security.UsuarioLogadoDTO;
@@ -10,7 +11,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UsuarioService implements UserDetailsService, IamPublicaApi {
@@ -22,9 +26,14 @@ public class UsuarioService implements UserDetailsService, IamPublicaApi {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username)
+            throws UsernameNotFoundException {
+
         Usuario usuario = repository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com o e-mail: " + username));
+                .orElseThrow(() ->
+                        new UsernameNotFoundException(
+                                "Usuário não encontrado com o e-mail: "
+                                        + username));
 
         return new UsuarioLogadoDTO(
                 usuario.getId(),
@@ -35,14 +44,54 @@ public class UsuarioService implements UserDetailsService, IamPublicaApi {
     }
 
     @Override
-    public ResultadoPadrao<?> validarUsuario(UUID usuarioId) {
+    public ResultadoPadrao<PedidoUsuarioDTO> obterUsuario(UUID usuarioId) {
 
-        Usuario usuario = repository.findById(usuarioId).orElse(null);
+        Usuario usuario = repository.findById(usuarioId)
+                .orElse(null);
 
-        if (usuario == null) return ResultadoPadrao.failure("Cliente não encontrado no sistema.");
-        if (!usuario.getAtivo()) return ResultadoPadrao.failure("A conta do cliente está inativa.");
+        if (usuario == null) {
+            return ResultadoPadrao.failure(
+                    "Usuário não encontrado."
+            );
+        }
 
-        return ResultadoPadrao.success();
+        if (!usuario.getAtivo()) {
+            return ResultadoPadrao.failure(
+                    "A conta do usuário está inativa."
+            );
+        }
+
+        return ResultadoPadrao.success(
+                toPedidoUsuarioDTO(usuario)
+        );
     }
 
+    @Override
+    public ResultadoPadrao<Map<UUID, PedidoUsuarioDTO>>
+    obterUsuarios(Set<UUID> usuariosIds) {
+
+        var usuarios = repository.buscarUsuarios(usuariosIds);
+
+        Map<UUID, PedidoUsuarioDTO> resultado =
+                usuarios.stream()
+                        .collect(Collectors.toMap(
+                                Usuario::getId,
+                                this::toPedidoUsuarioDTO
+                        ));
+
+        return ResultadoPadrao.success(resultado);
+    }
+
+    private PedidoUsuarioDTO toPedidoUsuarioDTO(
+            Usuario usuario) {
+
+        return new PedidoUsuarioDTO(
+                usuario.getId(),
+                usuario.getNome(),
+                usuario.getEmail(),
+                usuario.getDocumentoExibicao(),
+                usuario.getTipoUsuario(),
+                usuario.getAtivo()
+        );
+    }
 }

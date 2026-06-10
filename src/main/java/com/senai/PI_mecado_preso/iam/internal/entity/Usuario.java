@@ -144,5 +144,9 @@ public abstract class Usuario implements UserDetails {
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
     }
+
+    public abstract String getDocumentoExibicao();
+
+    public abstract String getTipoUsuario();
     
 }
