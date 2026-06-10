@@ -1,6 +1,6 @@
 package com.senai.PI_mecado_preso.sales.api.dtos;
 
-import com.senai.PI_mecado_preso.iam.api.PedidoClienteExibicaoDTO;
+import com.senai.PI_mecado_preso.iam.api.PedidoUsuarioDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public record PedidoDetalhadoResponseDTO(
         UUID id,
-        PedidoClienteExibicaoDTO cliente, // Objeto enriquecido
+        PedidoUsuarioDTO cliente,
         String status,
         BigDecimal valorTotal,
         LocalDateTime criadoEm,

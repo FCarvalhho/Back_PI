@@ -1,6 +1,6 @@
 package com.senai.PI_mecado_preso.catalog.internal.service;
 
-import com.senai.PI_mecado_preso.catalog.api.CatalogoPublicaAPI;
+import com.senai.PI_mecado_preso.catalog.api.*;
 import com.senai.PI_mecado_preso.catalog.internal.entity.ProdutoVariacao;
 import com.senai.PI_mecado_preso.catalog.internal.repository.ProdutoVariacaoRepository;
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
@@ -9,7 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 class CatalogPublicoService implements CatalogoPublicaAPI {
@@ -22,38 +23,155 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
 
     @Override
     @Transactional(readOnly = true)
-    public ResultadoPadrao<Boolean> verificarEstoque(UUID variacaoId, Integer quantidade) {
-        return variacaoRepository.findById(variacaoId)
-                .map(variacao -> {
-                    boolean possuiEstoque = variacao.getEstoque() >= quantidade;
-                    return possuiEstoque
-                            ? ResultadoPadrao.success(true)
-                            : ResultadoPadrao.<Boolean>failure("Estoque insuficiente para a variação informada. Disponível: " + variacao.getEstoque());
-                })
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Produto/Variação não encontrada no catálogo com o ID: " + variacaoId));
+    public ResultadoPadrao<ValidacaoProdutosDTO> validarProdutos(
+            Map<UUID, ItemValidacaoRequestDTO> itens) {
+
+        List<DetalheItemCatalogoDTO> detalhes =
+                variacaoRepository.buscarDetalhes(itens.keySet());
+
+        if (detalhes.size() != itens.size()) {
+            return ResultadoPadrao.failure(
+                    "Um ou mais produtos não foram encontrados ou estão inativos."
+            );
+        }
+
+        BigDecimal valorTotal = BigDecimal.ZERO;
+
+        Map<UUID, ItemValidadoDTO> itensValidados = new HashMap<>();
+
+        for (DetalheItemCatalogoDTO detalhe : detalhes) {
+
+            ItemValidacaoRequestDTO itemRequest =
+                    itens.get(detalhe.variacaoId());
+
+            if (itemRequest == null) {
+                continue;
+            }
+
+            if (detalhe.estoque() < itemRequest.quantidade()) {
+                return ResultadoPadrao.failure(
+                        "Estoque insuficiente para o produto "
+                                + detalhe.nomeProduto()
+                                + ". Disponível: "
+                                + detalhe.estoque()
+                );
+            }
+
+            if (detalhe.preco()
+                    .compareTo(itemRequest.precoVisualizado()) != 0) {
+
+                return ResultadoPadrao.failure(
+                        "O preço do produto "
+                                + detalhe.nomeProduto()
+                                + " foi alterado. Valor atual: R$ "
+                                + detalhe.preco()
+                );
+            }
+
+            valorTotal = valorTotal.add(
+                    detalhe.preco()
+                            .multiply(
+                                    BigDecimal.valueOf(
+                                            itemRequest.quantidade()
+                                    )
+                            )
+            );
+
+            itensValidados.put(
+                    detalhe.variacaoId(),
+                    new ItemValidadoDTO(
+                            detalhe.variacaoId(),
+                            detalhe.nomeProduto(),
+                            detalhe.preco(),
+                            itemRequest.quantidade()
+                    )
+            );
+        }
+
+        return ResultadoPadrao.success(
+                new ValidacaoProdutosDTO(
+                        valorTotal,
+                        itensValidados
+                )
+        );
     }
 
     @Override
     @Transactional
-    public ResultadoPadrao<?> baixarEstoque(UUID variacaoId, Integer quantity) { // Alinhado ao contrato da API
-        ProdutoVariacao variacao = variacaoRepository.findById(variacaoId)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Variação de produto não encontrada para baixa com o ID: " + variacaoId));
+    public ResultadoPadrao<?> baixarEstoque(Map<UUID, Integer> quantidades) {
 
-        if (variacao.getEstoque() < quantity) {
-            return ResultadoPadrao.failure("Falha ao baixar estoque: Saldo insuficiente.");
+        List<ProdutoVariacao> variacoes =
+                variacaoRepository.findAllById(quantidades.keySet());
+
+        if (variacoes.size() != quantidades.size()) {
+
+            Set<UUID> encontrados = variacoes.stream()
+                    .map(ProdutoVariacao::getId)
+                    .collect(Collectors.toSet());
+
+            UUID faltante = quantidades.keySet().stream()
+                    .filter(id -> !encontrados.contains(id))
+                    .findFirst()
+                    .orElse(null);
+
+            throw new RecursoNaoEncontradoException(
+                    "Variação de produto não encontrada para baixa com o ID: "
+                            + faltante
+            );
         }
 
-        variacao.setEstoque(variacao.getEstoque() - quantity);
-        variacaoRepository.save(variacao);
+        for (ProdutoVariacao variacao : variacoes) {
+
+            Integer quantidadeSolicitada =
+                    quantidades.get(variacao.getId());
+
+            if (variacao.getEstoque() < quantidadeSolicitada) {
+                return ResultadoPadrao.failure(
+                        "Falha ao baixar estoque. Produto "
+                                + variacao.getId()
+                                + " possui apenas "
+                                + variacao.getEstoque()
+                                + " unidades disponíveis."
+                );
+            }
+        }
+
+        for (ProdutoVariacao variacao : variacoes) {
+
+            Integer quantidadeSolicitada =
+                    quantidades.get(variacao.getId());
+
+            variacao.setEstoque(
+                    variacao.getEstoque() - quantidadeSolicitada
+            );
+        }
 
         return ResultadoPadrao.success();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResultadoPadrao<BigDecimal> obterPreco(UUID variacaoId) {
-        return variacaoRepository.findById(variacaoId)
-                .map(variacao -> ResultadoPadrao.success(variacao.getPreco()))
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Variação não encontrada para consulta de valores com o ID: " + variacaoId));
+    public ResultadoPadrao<Map<UUID, DetalheItemCatalogoDTO>> obterItens(
+            Set<UUID> itens) {
+
+        List<DetalheItemCatalogoDTO> detalhes =
+                variacaoRepository.buscarDetalhes(itens);
+
+        if (detalhes.size() != itens.size()) {
+            return ResultadoPadrao.failure(
+                    "Uma ou mais variações não foram encontradas ou estão inativas."
+            );
+        }
+
+        Map<UUID, DetalheItemCatalogoDTO> resultado = new HashMap<>();
+
+        for (DetalheItemCatalogoDTO detalhe : detalhes) {
+            resultado.put(
+                    detalhe.variacaoId(),
+                    detalhe
+            );
+        }
+
+        return ResultadoPadrao.success(resultado);
     }
 }

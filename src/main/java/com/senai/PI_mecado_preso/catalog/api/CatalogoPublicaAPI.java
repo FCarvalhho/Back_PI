@@ -2,14 +2,21 @@ package com.senai.PI_mecado_preso.catalog.api;
 
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
 
-import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public interface CatalogoPublicaAPI {
 
-    ResultadoPadrao<Boolean> verificarEstoque(UUID variacaoId, Integer quantidade);
+    ResultadoPadrao<ValidacaoProdutosDTO> validarProdutos(
+            Map<UUID, ItemValidacaoRequestDTO> itens
+    );
 
-    ResultadoPadrao<?> baixarEstoque(UUID variacaoId, Integer quantidade);
+    ResultadoPadrao<?> baixarEstoque(
+            Map<UUID, Integer> quantidades
+    );
 
-    ResultadoPadrao<BigDecimal> obterPreco(UUID variacaoId);
+    ResultadoPadrao<Map<UUID, DetalheItemCatalogoDTO>> obterItens(
+            Set<UUID> itens
+    );
 }
