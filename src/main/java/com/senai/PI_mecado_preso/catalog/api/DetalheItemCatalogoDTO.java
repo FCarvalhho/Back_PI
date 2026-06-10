@@ -7,5 +7,7 @@ public record DetalheItemCatalogoDTO(
         UUID variacaoId,
         String nomeProduto,
         BigDecimal preco,
-        Integer estoque
+        Integer estoque,
+        String sku,
+        String detalhes
 ) {}

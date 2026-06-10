@@ -26,74 +26,95 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
     public ResultadoPadrao<ValidacaoProdutosDTO> validarProdutos(
             Map<UUID, ItemValidacaoRequestDTO> itens) {
 
-        List<DetalheItemCatalogoDTO> detalhes =
-                variacaoRepository.buscarDetalhes(itens.keySet());
+        List<ProdutoVariacao> variacoes = variacaoRepository.buscarVariacoesComDetalhes(itens.keySet());
 
-        if (detalhes.size() != itens.size()) {
+        if (variacoes.size() != itens.size()) {
             return ResultadoPadrao.failure(
                     "Um ou mais produtos não foram encontrados ou estão inativos."
             );
         }
 
         BigDecimal valorTotal = BigDecimal.ZERO;
-
         Map<UUID, ItemValidadoDTO> itensValidados = new HashMap<>();
 
-        for (DetalheItemCatalogoDTO detalhe : detalhes) {
-
-            ItemValidacaoRequestDTO itemRequest =
-                    itens.get(detalhe.variacaoId());
+        for (ProdutoVariacao variacao : variacoes) {
+            ItemValidacaoRequestDTO itemRequest = itens.get(variacao.getId());
 
             if (itemRequest == null) {
                 continue;
             }
 
-            if (detalhe.estoque() < itemRequest.quantidade()) {
+            if (variacao.getEstoque() < itemRequest.quantidade()) {
                 return ResultadoPadrao.failure(
-                        "Estoque insuficiente para o produto "
-                                + detalhe.nomeProduto()
-                                + ". Disponível: "
-                                + detalhe.estoque()
+                        "Estoque insuficiente para o produto " + variacao.getProduto().getNome() + "."
                 );
             }
 
-            if (detalhe.preco()
-                    .compareTo(itemRequest.precoVisualizado()) != 0) {
-
+            if (variacao.getPreco().compareTo(itemRequest.precoVisualizado()) != 0) {
                 return ResultadoPadrao.failure(
-                        "O preço do produto "
-                                + detalhe.nomeProduto()
-                                + " foi alterado. Valor atual: R$ "
-                                + detalhe.preco()
+                        "O preço do produto foi alterado. Valor atual: R$ " + variacao.getPreco()
                 );
             }
 
             valorTotal = valorTotal.add(
-                    detalhe.preco()
-                            .multiply(
-                                    BigDecimal.valueOf(
-                                            itemRequest.quantidade()
-                                    )
-                            )
+                    variacao.getPreco().multiply(BigDecimal.valueOf(itemRequest.quantidade()))
             );
 
             itensValidados.put(
-                    detalhe.variacaoId(),
+                    variacao.getId(),
                     new ItemValidadoDTO(
-                            detalhe.variacaoId(),
-                            detalhe.nomeProduto(),
-                            detalhe.preco(),
+                            variacao.getId(),
+                            variacao.getProduto().getNome(),
+                            variacao.getPreco(),
                             itemRequest.quantidade()
                     )
             );
         }
 
-        return ResultadoPadrao.success(
-                new ValidacaoProdutosDTO(
-                        valorTotal,
-                        itensValidados
-                )
-        );
+        return ResultadoPadrao.success(new ValidacaoProdutosDTO(valorTotal, itensValidados));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResultadoPadrao<Map<UUID, DetalheItemCatalogoDTO>> obterItens(Set<UUID> itens) {
+
+        List<ProdutoVariacao> variacoes = variacaoRepository.buscarVariacoesComDetalhes(itens);
+
+        if (variacoes.size() != itens.size()) {
+            return ResultadoPadrao.failure(
+                    "Uma ou mais variações não foram encontradas ou estão inativas."
+            );
+        }
+
+        Map<UUID, DetalheItemCatalogoDTO> resultado = new HashMap<>();
+
+        for (ProdutoVariacao pv : variacoes) {
+
+
+            String detalhesString = pv.getOpcoes().stream()
+                    .map(opcao -> {
+                        String nomeAtributo = (opcao.getAtributo() != null) ? opcao.getAtributo().getNome() : "Opção";
+                        return nomeAtributo + ": " + opcao.getValor();
+                    })
+                    .collect(Collectors.joining(" | "));
+
+            if (detalhesString.isEmpty()) {
+                detalhesString = "Variação Padrão";
+            }
+
+            DetalheItemCatalogoDTO dto = new DetalheItemCatalogoDTO(
+                    pv.getId(),
+                    pv.getProduto().getNome(),
+                    pv.getPreco(),
+                    pv.getEstoque(),
+                    pv.getSku() != null ? pv.getSku() : "S/K",
+                    detalhesString
+            );
+
+            resultado.put(pv.getId(), dto);
+        }
+
+        return ResultadoPadrao.success(resultado);
     }
 
     @Override
@@ -149,29 +170,4 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
         return ResultadoPadrao.success();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public ResultadoPadrao<Map<UUID, DetalheItemCatalogoDTO>> obterItens(
-            Set<UUID> itens) {
-
-        List<DetalheItemCatalogoDTO> detalhes =
-                variacaoRepository.buscarDetalhes(itens);
-
-        if (detalhes.size() != itens.size()) {
-            return ResultadoPadrao.failure(
-                    "Uma ou mais variações não foram encontradas ou estão inativas."
-            );
-        }
-
-        Map<UUID, DetalheItemCatalogoDTO> resultado = new HashMap<>();
-
-        for (DetalheItemCatalogoDTO detalhe : detalhes) {
-            resultado.put(
-                    detalhe.variacaoId(),
-                    detalhe
-            );
-        }
-
-        return ResultadoPadrao.success(resultado);
-    }
 }

@@ -79,6 +79,32 @@ public class CarrinhoService {
         return mapper.toResponse(carrinho);
     }
 
+    @Transactional
+    public void removerItemDoCarrinho(UUID variacaoId) {
+        UUID clienteId = obterClienteIdLogado();
+
+        Carrinho carrinho = carrinhoRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new RegraDeNegocioException(
+                        "Carrinho não encontrado para este cliente."
+                ));
+
+        carrinho.removerItem(variacaoId);
+        carrinhoRepository.save(carrinho);
+    }
+
+    @Transactional
+    public void limparCarrinho() {
+        UUID clienteId = obterClienteIdLogado();
+
+        Carrinho carrinho = carrinhoRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new RegraDeNegocioException(
+                        "Carrinho não encontrado para este cliente."
+                ));
+
+        carrinho.limparItens();
+        carrinhoRepository.save(carrinho);
+    }
+
     private UUID obterClienteIdLogado() {
 
         Authentication authentication =
