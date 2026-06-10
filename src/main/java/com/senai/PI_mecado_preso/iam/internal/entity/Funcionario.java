@@ -20,6 +20,16 @@ public class Funcionario extends Usuario {
     @Column(nullable = false, unique = true)
     private String matricula;
 
+    @Override
+    public String getDocumentoExibicao() {
+        return matricula;
+    }
+
+    @Override
+    public String getTipoUsuario() {
+        return "FUNCIONARIO";
+    }
+
     public Funcionario() {
     }
 
@@ -30,5 +40,5 @@ public class Funcionario extends Usuario {
     public void setMatricula(String matricula) {
         this.matricula = matricula;
     }
-    
+
 }

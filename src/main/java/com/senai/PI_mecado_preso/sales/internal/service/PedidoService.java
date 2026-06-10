@@ -3,8 +3,9 @@ package com.senai.PI_mecado_preso.sales.internal.service;
 import com.senai.PI_mecado_preso.billing.api.CobrancaRequestDTO;
 import com.senai.PI_mecado_preso.billing.api.CobrancaResponseDTO;
 import com.senai.PI_mecado_preso.billing.api.PagamentoPublicaAPI;
-import com.senai.PI_mecado_preso.catalog.api.CatalogoPublicaAPI;
+import com.senai.PI_mecado_preso.catalog.api.*;
 import com.senai.PI_mecado_preso.iam.api.IamPublicaApi;
+import com.senai.PI_mecado_preso.iam.api.PedidoUsuarioDTO;
 import com.senai.PI_mecado_preso.sales.api.dtos.*;
 import com.senai.PI_mecado_preso.sales.internal.entity.ItemPedido;
 import com.senai.PI_mecado_preso.sales.internal.entity.Pedido;
@@ -16,8 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -44,80 +45,127 @@ public class PedidoService {
     @Transactional
     public CheckoutResponseDTO criarPedido(PedidoRequestDTO request) {
 
-        ResultadoPadrao<?> validacaoIam = iamPublicAPI.validarUsuario(request.clienteId());
-        if (!validacaoIam.isValid()) {
-            throw new RegraDeNegocioException("Falha no checkout: " + validacaoIam.failureReason());
+        ResultadoPadrao<PedidoUsuarioDTO> resultadoUsuario =
+                iamPublicAPI.obterUsuario(request.clienteId());
+
+        if (!resultadoUsuario.isValid()) {
+            throw new RegraDeNegocioException(
+                    "Falha no checkout: "
+                            + resultadoUsuario.failureReason()
+            );
         }
+
+        Map<UUID, ItemValidacaoRequestDTO> itensValidacao =
+                request.itens()
+                        .stream()
+                        .collect(Collectors.toMap(
+                                ItemPedidoRequestDTO::variacaoId,
+                                item -> new ItemValidacaoRequestDTO(
+                                        item.quantidade(),
+                                        item.precoUnitario()
+                                )
+                        ));
+
+        ResultadoPadrao<ValidacaoProdutosDTO> validacaoProdutos =
+                catalogoEstoqueAPI.validarProdutos(itensValidacao);
+
+        if (!validacaoProdutos.isValid()) {
+            throw new RegraDeNegocioException(
+                    validacaoProdutos.failureReason()
+            );
+        }
+
+        ValidacaoProdutosDTO dadosProdutos =
+                validacaoProdutos.dado();
 
         Pedido pedido = new Pedido();
         pedido.setClienteId(request.clienteId());
         pedido.setStatus("PENDENTE");
+        pedido.setValorTotal(dadosProdutos.valorTotal());
 
-        BigDecimal valorTotalPedido = BigDecimal.ZERO;
+        Map<UUID, Integer> itensParaBaixa = new HashMap<>();
 
-        for (ItemPedidoRequestDTO itemDto : request.itens()) {
-
-            ResultadoPadrao<Boolean> validacaoEstoque = catalogoEstoqueAPI.verificarEstoque(itemDto.variacaoId(), itemDto.quantidade());
-            if (!validacaoEstoque.isValid()) {
-                throw new RegraDeNegocioException("Falha no checkout para o item " + itemDto.variacaoId() + ": " + validacaoEstoque.failureReason());
-            }
-
-            ResultadoPadrao<BigDecimal> consultaPreco = catalogoEstoqueAPI.obterPreco(itemDto.variacaoId());
-            if (!consultaPreco.isValid()) {
-                throw new RegraDeNegocioException("Falha na validação de preços: " + consultaPreco.failureReason());
-            }
-            BigDecimal precoOficialServidor = consultaPreco.dado();
-
-            if (itemDto.precoUnitario().compareTo(precoOficialServidor) != 0) {
-                throw new RegraDeNegocioException("🚨 Segurança: Divergência de preço detectada para a variação " + itemDto.variacaoId()
-                        + ". Valor enviado pelo cliente: R$ " + itemDto.precoUnitario()
-                        + " | Valor oficial do servidor: R$ " + precoOficialServidor);
-            }
-
-            ResultadoPadrao<?> baixaEstoque = catalogoEstoqueAPI.baixarEstoque(itemDto.variacaoId(), itemDto.quantidade());
-            if (!baixaEstoque.isValid()) {
-                throw new RegraDeNegocioException("Erro ao deduzir estoque: " + baixaEstoque.failureReason());
-            }
+        for (ItemValidadoDTO itemValidado :
+                dadosProdutos.itens().values()) {
 
             ItemPedido itemPedido = new ItemPedido();
-            itemPedido.setVariacaoId(itemDto.variacaoId());
-            itemPedido.setQuantidade(itemDto.quantidade());
-            itemPedido.setPrecoUnitario(precoOficialServidor);
+
+            itemPedido.setVariacaoId(
+                    itemValidado.variacaoId()
+            );
+
+            itemPedido.setQuantidade(
+                    itemValidado.quantidade()
+            );
+
+            itemPedido.setPrecoUnitario(
+                    itemValidado.precoAtual()
+            );
+
             pedido.adicionarItem(itemPedido);
 
-            BigDecimal subtotalItem = precoOficialServidor.multiply(BigDecimal.valueOf(itemDto.quantidade()));
-            valorTotalPedido = valorTotalPedido.add(subtotalItem);
+            itensParaBaixa.merge(
+                    itemValidado.variacaoId(),
+                    itemValidado.quantidade(),
+                    Integer::sum
+            );
         }
 
-        pedido.setValorTotal(valorTotalPedido);
+        ResultadoPadrao<?> baixaEstoque =
+                catalogoEstoqueAPI.baixarEstoque(itensParaBaixa);
+
+        if (!baixaEstoque.isValid()) {
+            throw new RegraDeNegocioException(
+                    "Erro ao baixar estoque: "
+                            + baixaEstoque.failureReason()
+            );
+        }
+
         pedido = pedidoRepository.save(pedido);
 
-        CobrancaRequestDTO cobrancaRequest = new CobrancaRequestDTO(
-                pedido.getId(),
-                pedido.getValorTotal(),
-                request.metodoPagamento(),
-                request.parcelas()
-        );
+        CobrancaRequestDTO cobrancaRequest =
+                new CobrancaRequestDTO(
+                        pedido.getId(),
+                        pedido.getValorTotal(),
+                        request.metodoPagamento(),
+                        request.parcelas()
+                );
 
-        ResultadoPadrao<CobrancaResponseDTO> resultadoCobranca = pagamentoPublicaAPI.processarCobranca(cobrancaRequest).join();
+        ResultadoPadrao<CobrancaResponseDTO> resultadoCobranca =
+                pagamentoPublicaAPI
+                        .processarCobranca(cobrancaRequest)
+                        .join();
 
-        if (resultadoCobranca == null || !resultadoCobranca.isValid()) {
-            throw new RegraDeNegocioException("Erro ao processar faturamento do pedido.");
+        if (resultadoCobranca == null
+                || !resultadoCobranca.isValid()) {
+
+            throw new RegraDeNegocioException(
+                    "Erro ao processar faturamento do pedido."
+            );
         }
 
-        CobrancaResponseDTO dadosCobranca = resultadoCobranca.dado();
+        CobrancaResponseDTO dadosCobranca =
+                resultadoCobranca.dado();
 
         if ("PAGO".equals(dadosCobranca.statusSugerido())) {
+
             pedido.setStatus("APROVADO");
-        } else if ("FALHADO".equals(dadosCobranca.statusSugerido())) {
+
+        } else if ("FALHADO".equals(
+                dadosCobranca.statusSugerido())) {
+
             pedido.setStatus("CANCELADO");
+
         } else {
+
             pedido.setStatus("AGUARDANDO_PAGAMENTO");
         }
 
         pedido = pedidoRepository.saveAndFlush(pedido);
 
-        PedidoCriadoResponseDTO pedidoResponse = pedidoMapper.toCriadoResponse(pedido);
+        PedidoCriadoResponseDTO pedidoResponse =
+                pedidoMapper.toCriadoResponse(pedido);
+
         return new CheckoutResponseDTO(
                 pedidoResponse,
                 dadosCobranca.processadoSincronamente(),

@@ -25,6 +25,16 @@ public class Cliente extends Usuario {
     public Cliente() {
     }
 
+    @Override
+    public String getDocumentoExibicao() {
+        return cpf;
+    }
+
+    @Override
+    public String getTipoUsuario() {
+        return "CLIENTE";
+    }
+
     public String getCpf() {
         return cpf;
     }
@@ -40,5 +50,5 @@ public class Cliente extends Usuario {
     public void setTelefone(String telefone) {
         this.telefone = telefone;
     }
-    
+
 }
