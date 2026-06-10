@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: PI-mecado-preso
+  datasource:
+    url: jdbc:postgresql://localhost:5432/Mercado-Preso
+    username: postgres
+    password: 123456789
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    schemas: public, iam, catalog, sales, billing
+    default-schema: public
+    baseline-on-migrate: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+logging:
+  level:
+    org:
+      hibernate:
+        sql: INFO
+        orm:
+          jdbc:
+            bind: INFO
+api:
+  security:
+    token:
+      secret: "SUA_CHAVE_SECRETA_SUPER_SEGURA_COM_PELO_MENOS_32_CARACTERES"
+      expiration: 86400000
+    admin:
+      email: "admin@vendas.com"
+      password: "admin123"

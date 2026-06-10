@@ -16,7 +16,7 @@ import jakarta.persistence.Table;
 @Table(name = "cliente", schema = "iam")
 public class Cliente extends Usuario {
 
-    @Column(nullable = false, unique = true, length = 14) // Ex: 000.000.000-00
+    @Column(nullable = false, unique = true, length = 14)
     private String cpf;
     
     @Column(nullable = false, unique = true)

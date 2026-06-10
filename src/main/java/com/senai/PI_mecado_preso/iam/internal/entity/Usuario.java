@@ -4,26 +4,16 @@
  */
 package com.senai.PI_mecado_preso.iam.internal.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 /**
  *
@@ -52,33 +42,33 @@ public abstract class Usuario implements UserDetails {
     @Column(name = "criado_em", insertable = false, updatable = false)
     private LocalDateTime criadoEm;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "usuario_role", schema = "iam",
-        joinColumns = @JoinColumn(name = "usuario_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "usuario_role", schema = "iam",
+            joinColumns = @JoinColumn(name = "usuario_id")
     )
-    private Set<Role> roles;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private Set<Role> roles = new java.util.HashSet<>();
     
     public Usuario() {
     }
     
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Converte suas Roles em SimpleGrantedAuthority para o Spring[cite: 1, 2]
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getNome()))
+                .map(role -> new SimpleGrantedAuthority(role.name()))
                 .collect(Collectors.toList());
     }
 
     @Override
     public String getPassword() {
-        return this.senha; //[cite: 1]
+        return this.senha;
     }
 
     @Override
     public String getUsername() {
-        return this.email; // Usando email como login[cite: 1]
+        return this.email;
     }
 
     @Override
@@ -98,7 +88,7 @@ public abstract class Usuario implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return this.ativo; // Usa seu campo ativo[cite: 1]
+        return this.ativo;
     }
 
     public UUID getId() {
@@ -141,9 +131,7 @@ public abstract class Usuario implements UserDetails {
         this.ativo = ativo;
     }
 
-    public LocalDateTime getCriadoEm() {
-        return criadoEm;
-    }
+    public LocalDateTime getCriadoEm() { return criadoEm; }
 
     public void setCriadoEm(LocalDateTime criadoEm) {
         this.criadoEm = criadoEm;

@@ -37,40 +37,14 @@ public class VariacaoOpcao {
     @Column(nullable = false)
     private String valor;
 
-    public VariacaoOpcao() {
-    }
+    public VariacaoOpcao() {}
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public ProdutoVariacao getVariacao() {
-        return variacao;
-    }
-
-    public void setVariacao(ProdutoVariacao variacao) {
-        this.variacao = variacao;
-    }
-
-    public Atributo getAtributo() {
-        return atributo;
-    }
-
-    public void setAtributo(Atributo atributo) {
-        this.atributo = atributo;
-    }
-
-    public String getValor() {
-        return valor;
-    }
-
-    public void setValor(String valor) {
-        this.valor = valor;
-    }
-    
-    
+    public UUID getId() {return id;}
+    public void setId(UUID id) {this.id = id;}
+    public ProdutoVariacao getVariacao() {return variacao;}
+    public void setVariacao(ProdutoVariacao variacao) {this.variacao = variacao;}
+    public Atributo getAtributo() {return atributo;}
+    public void setAtributo(Atributo atributo) {this.atributo = atributo;}
+    public String getValor() {return valor;}
+    public void setValor(String valor) {this.valor = valor;}
 }

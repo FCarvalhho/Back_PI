@@ -1,18 +1,19 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Record.java to edit this template
- */
 package com.senai.PI_mecado_preso.sales.api.dtos;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+
+import java.math.BigDecimal;
 import java.util.UUID;
 
-/**
- *
- * @author Cansei2
- */
 public record ItemPedidoRequestDTO(
+        @NotNull(message = "O variacaoId é obrigatório")
         UUID variacaoId,
-        Integer quantidade
-        ) {
 
-}
+        @NotNull(message = "A quantidade é obrigatória")
+        @Min(value = 1, message = "A quantidade mínima deve ser 1")
+        Integer quantidade,
+
+        @NotNull(message = "O variacaoId é obrigatório")
+        BigDecimal precoUnitario
+) {}
