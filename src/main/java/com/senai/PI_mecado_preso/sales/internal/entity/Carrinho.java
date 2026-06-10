@@ -1,5 +1,6 @@
 package com.senai.PI_mecado_preso.sales.internal.entity;
 
+import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -33,6 +34,23 @@ public class Carrinho {
         }
         ItemCarrinho novoItem = new ItemCarrinho(this, variacaoId, quantidade);
         this.itens.add(novoItem);
+    }
+
+    public void removerItem(UUID variacaoId) {
+        this.atualizadoEm = LocalDateTime.now();
+
+        boolean removido = this.itens.removeIf(item -> item.getVariacaoId().equals(variacaoId));
+
+        if (!removido) {
+            throw new com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException(
+                    "Item não encontrado no carrinho para remoção."
+            );
+        }
+    }
+
+    public void limparItens() {
+        this.atualizadoEm = LocalDateTime.now();
+        this.itens.clear();
     }
 
     public UUID getId() {

@@ -14,16 +14,13 @@ public interface ProdutoVariacaoRepository
         extends JpaRepository<ProdutoVariacao, UUID> {
 
     @Query("""
-        select new com.senai.PI_mecado_preso.catalog.api.DetalheItemCatalogoDTO(
-            pv.id,
-            p.nome,
-            pv.preco,
-            pv.estoque
-        )
+        select distinct pv 
         from ProdutoVariacao pv
-        join pv.produto p
+        join fetch pv.produto p
+        left join fetch pv.opcoes o
+        left join fetch o.atributo a
         where pv.id in :ids
         and p.ativo = true
     """)
-    List<DetalheItemCatalogoDTO> buscarDetalhes(Set<UUID> ids);
+    List<ProdutoVariacao> buscarVariacoesComDetalhes(Set<UUID> ids);
 }

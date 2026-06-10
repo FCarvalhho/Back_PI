@@ -11,8 +11,11 @@ import com.senai.PI_mecado_preso.sales.internal.entity.ItemPedido;
 import com.senai.PI_mecado_preso.sales.internal.entity.Pedido;
 import com.senai.PI_mecado_preso.sales.internal.mapper.PedidoMapper;
 import com.senai.PI_mecado_preso.sales.internal.repository.PedidoRepository;
+import com.senai.PI_mecado_preso.shared.config.security.UsuarioLogadoDTO;
 import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
 import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -176,14 +179,83 @@ public class PedidoService {
         );
     }
 
+    @Transactional(readOnly = true)
     public List<PedidoDetalhadoResponseDTO> listarTodos() {
         List<Pedido> pedidos = pedidoRepository.findAll();
+        return enriquecerEConverterPedidos(pedidos);
+    }
 
-        // Para cada pedido:
-        // 1. Busca os dados do cliente no IAM usando o clienteId
-        // 2. Busca os dados das variações envolvidas no Catalog
-        // 3. Monta e mapeia para PedidoDetalhadoResponseDTO
+    @Transactional(readOnly = true)
+    public List<PedidoDetalhadoResponseDTO> listarPedidosDoClienteLogado() {
+        UUID clienteId = obterClienteIdLogado();
+        List<Pedido> pedidos = pedidoRepository.findByClienteIdOrderByCriadoEmDesc(clienteId);
+        return enriquecerEConverterPedidos(pedidos);
+    }
 
-        return List.of();
+    private List<PedidoDetalhadoResponseDTO> enriquecerEConverterPedidos(List<Pedido> pedidos) {
+        if (pedidos.isEmpty()) {
+            return List.of();
+        }
+
+        Set<UUID> clientesIds = pedidos.stream()
+                .map(Pedido::getClienteId)
+                .collect(Collectors.toSet());
+
+        Set<UUID> variacoesIds = pedidos.stream()
+                .flatMap(p -> p.getItens().stream())
+                .map(ItemPedido::getVariacaoId)
+                .collect(Collectors.toSet());
+
+        ResultadoPadrao<Map<UUID, PedidoUsuarioDTO>> resultadoUsuarios = iamPublicAPI.obterUsuarios(clientesIds);
+        Map<UUID, PedidoUsuarioDTO> mapaUsuarios = resultadoUsuarios.isValid() ? resultadoUsuarios.dado() : Map.of();
+
+        ResultadoPadrao<Map<UUID, DetalheItemCatalogoDTO>> resultadoItens = catalogoEstoqueAPI.obterItens(variacoesIds);
+        Map<UUID, DetalheItemCatalogoDTO> mapaItens = resultadoItens.isValid() ? resultadoItens.dado() : Map.of();
+
+        return pedidos.stream().map(pedido -> {
+            PedidoUsuarioDTO clienteDto = mapaUsuarios.getOrDefault(pedido.getClienteId(),
+                    new PedidoUsuarioDTO(pedido.getClienteId(), "Usuário Desconhecido", "", "", "", false));
+
+            List<ItemPedidoDetalhadoResponseDTO> itensDtos = pedido.getItens().stream().map(item -> {
+                DetalheItemCatalogoDTO detalheCatalogo = mapaItens.get(item.getVariacaoId());
+
+                PedidoVariacaoExibicaoDTO variacaoExibicao = null;
+                if (detalheCatalogo != null) {
+                    variacaoExibicao = new PedidoVariacaoExibicaoDTO(
+                            item.getVariacaoId(),
+                            detalheCatalogo.nomeProduto(),
+                            "N/A",
+                            "Variação Padrão"
+                    );
+                }
+
+                BigDecimal subtotalCalculado = item.getPrecoUnitario().multiply(BigDecimal.valueOf(item.getQuantidade()));
+
+                return new ItemPedidoDetalhadoResponseDTO(
+                        item.getId(),
+                        variacaoExibicao,
+                        item.getQuantidade(),
+                        item.getPrecoUnitario(),
+                        subtotalCalculado
+                );
+            }).collect(Collectors.toList());
+
+            return new PedidoDetalhadoResponseDTO(
+                    pedido.getId(),
+                    clienteDto,
+                    pedido.getStatus(),
+                    pedido.getValorTotal(),
+                    pedido.getCriadoEm(),
+                    itensDtos
+            );
+        }).collect(Collectors.toList());
+    }
+
+    private UUID obterClienteIdLogado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof UsuarioLogadoDTO principal)) {
+            throw new RegraDeNegocioException("Usuário não autenticado.");
+        }
+        return principal.getId();
     }
 }
