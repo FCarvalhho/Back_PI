@@ -55,11 +55,15 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.POST, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN") // Adicionado caso use Patch para o delete
+                        .requestMatchers(HttpMethod.PATCH, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
 
                         .requestMatchers(HttpMethod.GET, "/admin/vendas-geral").hasAnyAuthority("ROLE_FATURAMENTO", "ROLE_ADMIN")
-                        .requestMatchers("/api/pedidos/**").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAnyAuthority("ROLE_ADMIN", "ROLE_FATURAMENTO")
+                        .requestMatchers(HttpMethod.GET, "/api/pedidos/meus").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/pedidos").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
+                        .requestMatchers("/api/pedidos/carrinho/**").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
 
                         .anyRequest().authenticated()
                 )
