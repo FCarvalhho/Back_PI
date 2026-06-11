@@ -53,6 +53,38 @@ public class Carrinho {
         this.itens.clear();
     }
 
+    public void decrementarItem(UUID variacaoId) {
+        this.atualizadoEm = LocalDateTime.now();
+
+        ItemCarrinho itemEncontrado = null;
+        for (ItemCarrinho item : this.itens) {
+            if (item.getVariacaoId().equals(variacaoId)) {
+                itemEncontrado = item;
+                break;
+            }
+        }
+
+        if (itemEncontrado == null) {
+            throw new RegraDeNegocioException(
+                    "Item não encontrado no carrinho para decremento."
+            );
+        }
+
+        if (itemEncontrado.getQuantidade() <= 1) {
+            this.itens.remove(itemEncontrado);
+        } else {
+            itemEncontrado.setQuantidade(itemEncontrado.getQuantidade() - 1);
+        }
+    }
+
+    public void removerItensComprados(Set<UUID> variacoesCompradas) {
+        if (variacoesCompradas == null || variacoesCompradas.isEmpty()) {
+            return;
+        }
+        this.atualizadoEm = LocalDateTime.now();
+        this.itens.removeIf(item -> variacoesCompradas.contains(item.getVariacaoId()));
+    }
+
     public UUID getId() {
         return id;
     }

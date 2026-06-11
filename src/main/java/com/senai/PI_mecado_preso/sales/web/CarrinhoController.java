@@ -42,4 +42,16 @@ public class CarrinhoController {
         service.limparCarrinho();
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/itens/{variacaoId}/incrementar")
+    public ResponseEntity<Void> incrementar(@PathVariable UUID variacaoId) {
+        service.incrementarUnidade(variacaoId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/itens/{variacaoId}/decrementar")
+    public ResponseEntity<Void> decrementar(@PathVariable UUID variacaoId) {
+        service.decrementarUnidade(variacaoId);
+        return ResponseEntity.ok().build();
+    }
 }
