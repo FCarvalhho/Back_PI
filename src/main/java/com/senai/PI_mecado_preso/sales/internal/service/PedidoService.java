@@ -168,8 +168,6 @@ public class PedidoService {
 
         pedido = pedidoRepository.saveAndFlush(pedido);
 
-        pedido = pedidoRepository.saveAndFlush(pedido);
-
         Set<UUID> variacoesCompradasIds = request.itens()
                 .stream()
                 .map(ItemPedidoRequestDTO::variacaoId)
