@@ -105,6 +105,45 @@ public class CarrinhoService {
         carrinhoRepository.save(carrinho);
     }
 
+    @Transactional
+    public void incrementarUnidade(UUID variacaoId) {
+        UUID clienteId = obterClienteIdLogado();
+
+        Carrinho carrinho = carrinhoRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new RegraDeNegocioException(
+                        "Carrinho não encontrado para este cliente."
+                ));
+        carrinho.adicionarItem(variacaoId, 1);
+        carrinhoRepository.save(carrinho);
+    }
+
+    @Transactional
+    public void decrementarUnidade(UUID variacaoId) {
+        UUID clienteId = obterClienteIdLogado();
+
+        Carrinho carrinho = carrinhoRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new RegraDeNegocioException(
+                        "Carrinho não encontrado para este cliente."
+                ));
+        carrinho.decrementarItem(variacaoId);
+        carrinhoRepository.save(carrinho);
+    }
+
+    @Transactional
+    public void removerItensCompradosDoCarrinho(UUID clienteId, Set<UUID> variacoesIds) {
+        if (variacoesIds == null || variacoesIds.isEmpty()) {
+            return;
+        }
+
+        Carrinho carrinho = carrinhoRepository.findByClienteId(clienteId)
+                .orElse(null); // Caso o carrinho não exista por algum motivo, não quebra o fluxo de pós-venda
+
+        if (carrinho != null) {
+            carrinho.removerItensComprados(variacoesIds);
+            carrinhoRepository.save(carrinho);
+        }
+    }
+
     private UUID obterClienteIdLogado() {
 
         Authentication authentication =

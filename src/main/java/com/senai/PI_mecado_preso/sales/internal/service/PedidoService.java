@@ -168,7 +168,14 @@ public class PedidoService {
 
         pedido = pedidoRepository.saveAndFlush(pedido);
 
-        this.carrinhoService.limparCarrinho();
+        pedido = pedidoRepository.saveAndFlush(pedido);
+
+        Set<UUID> variacoesCompradasIds = request.itens()
+                .stream()
+                .map(ItemPedidoRequestDTO::variacaoId)
+                .collect(Collectors.toSet());
+
+        this.carrinhoService.removerItensCompradosDoCarrinho(request.clienteId(), variacoesCompradasIds);
 
         PedidoCriadoResponseDTO pedidoResponse =
                 pedidoMapper.toCriadoResponse(pedido);
