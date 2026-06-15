@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.shared.config.security;
 
 import jakarta.servlet.FilterChain;
@@ -20,10 +16,6 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-/**
- *
- * @author Cansei2
- */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 

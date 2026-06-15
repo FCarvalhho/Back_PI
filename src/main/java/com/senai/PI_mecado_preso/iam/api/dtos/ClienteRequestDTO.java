@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.iam.api.dtos;
 
 import jakarta.validation.constraints.Email;
@@ -9,10 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/**
- *
- * @author Cansei2
- */
 public record ClienteRequestDTO(
 
         @NotBlank(message = "O nome é obrigatório")
@@ -28,7 +20,6 @@ public record ClienteRequestDTO(
         @Pattern(regexp = "^\\(?\\d{2}\\)?\\s?\\d{4,5}-?\\d{4}$", message = "Telefone inválido. Use um formato válido com DDD (ex: (11) 99999-9999)")
         String telefone,
 
-        @NotBlank(message = "A senha é obrigatória")
         @Size(min = 6, max = 100, message = "A senha deve ter entre 6 e 100 caracteres")
         String senha,
 

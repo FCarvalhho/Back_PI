@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.sales.internal.entity;
 
 import jakarta.persistence.CascadeType;
@@ -18,10 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- *
- * @author Cansei2
- */
 @Entity
 @Table(name = "pedido", schema = "sales")
 public class Pedido {
@@ -30,7 +22,6 @@ public class Pedido {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // SOFT FK 
     @Column(name = "cliente_id", nullable = false)
     private UUID clienteId;
 

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.sales.internal.mapper;
 
 import com.senai.PI_mecado_preso.sales.api.dtos.ItemPedidoCriadoResponseDTO;
@@ -20,7 +16,6 @@ public interface ItemPedidoMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "pedido", ignore = true)
     @Mapping(target = "precoUnitario", ignore = true)
-        // O preço virá do Catálogo, injetaremos na Service
     ItemPedido toEntity(ItemPedidoRequestDTO dto);
 
     @Mapping(target = "subtotal", source = "entity", qualifiedByName = "calcularSubtotal")

@@ -233,8 +233,8 @@ public class PedidoService {
                     variacaoExibicao = new PedidoVariacaoExibicaoDTO(
                             item.getVariacaoId(),
                             detalheCatalogo.nomeProduto(),
-                            "N/A",
-                            "Variação Padrão"
+                            detalheCatalogo.sku(),
+                            detalheCatalogo.detalhes() != null ? detalheCatalogo.detalhes() : "Variação Padrão"
                     );
                 }
 

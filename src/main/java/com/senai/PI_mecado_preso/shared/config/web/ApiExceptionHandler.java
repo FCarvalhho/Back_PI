@@ -1,13 +1,6 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package com.senai.PI_mecado_preso.shared.config.web;
 
-/**
- *
- * @author GabrielB
- */
 import com.senai.PI_mecado_preso.shared.dto.ApiErrorResponse;
 import com.senai.PI_mecado_preso.shared.exception.*;
 import org.springframework.http.HttpHeaders;
@@ -24,10 +17,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 import java.time.OffsetDateTime;
 import java.util.List;
 
-@RestControllerAdvice // Substitui o @ControllerAdvice + @ResponseBody de forma elegante
+@RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
-    // 404 Not Found
     @ExceptionHandler(RecursoNaoEncontradoException.class)
     public ResponseEntity<ApiErrorResponse> handleRecursoNaoEncontrado(RecursoNaoEncontradoException ex) {
         HttpStatus status = HttpStatus.NOT_FOUND;
@@ -41,7 +33,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
-    // 401 Unauthorized (Usuário não autenticado)
     @ExceptionHandler(NaoAutenticadoException.class)
     public ResponseEntity<ApiErrorResponse> handleNaoAutenticado(
             NaoAutenticadoException ex) {
@@ -59,7 +50,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
-    // 403 Forbidden (Usuário autenticado sem permissão)
     @ExceptionHandler(AcessoNegadoException.class)
     public ResponseEntity<ApiErrorResponse> handleAcessoNegado(
             AcessoNegadoException ex) {
@@ -77,7 +67,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
-    // 400 Bad Request (Regras de Negócio Gerais)
     @ExceptionHandler({RegraDeNegocioException.class, QueryInvalidaException.class})
     public ResponseEntity<ApiErrorResponse> handleRegraDeNegocio(RuntimeException ex) {
         HttpStatus status = HttpStatus.BAD_REQUEST;
@@ -91,7 +80,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
-    // 409 Conflict (Emails repetidos, chaves duplicadas no banco)
     @ExceptionHandler({ConflitoException.class, EntidadeEmUsoException.class})
     public ResponseEntity<ApiErrorResponse> handleConflito(RuntimeException ex) {
         HttpStatus status = HttpStatus.CONFLICT;
@@ -105,7 +93,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
-    // 422 Unprocessable Entity (Erros semânticos na validação de dados)
     @ExceptionHandler(ErroValidacaoException.class)
     public ResponseEntity<ApiErrorResponse> handleErroValidacao(ErroValidacaoException ex) {
         HttpStatus status = HttpStatus.UNPROCESSABLE_ENTITY;
@@ -119,7 +106,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
-    // Captura automática de falhas do @Valid (Beans Validation) nos Controllers
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex,
@@ -145,7 +131,6 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(status).body(error);
     }
 
-    // Captura genérica (Fallback) para evitar vazamento de Stack Trace interna em produção (500 Internal Server Error)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUncaughtException(Exception ex) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
- */
 package com.senai.PI_mecado_preso.iam.internal.mapper;
 
 import com.senai.PI_mecado_preso.iam.api.dtos.FuncionarioRequestDTO;
@@ -13,11 +9,6 @@ import org.mapstruct.*;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-/**
- *
- * @author Cansei2
- */
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface FuncionarioMapper {
