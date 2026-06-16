@@ -36,11 +36,8 @@ class CatalogDatabaseSeeder {
 
                 log.info("[Catalog Seeder] Iniciando população completa de dados estruturados...");
 
-                // 1. Garantir ou Criar os Atributos Globais Dinamicamente
                 UUID idAtributoCor = garantirAtributo(atributoService, "Cor");
                 UUID idAtributoTamanho = garantirAtributo(atributoService, "Tamanho");
-
-                // 2. Montar requisição do Produto Base com sua Descrição e Vínculo de Atributos
                 List<UUID> atributosDoProduto = List.of(idAtributoCor, idAtributoTamanho);
                 
                 ProdutoRequestDTO produtoRequest = new ProdutoRequestDTO(
@@ -49,11 +46,9 @@ class CatalogDatabaseSeeder {
                         atributosDoProduto
                 );
 
-                // Salvar o Produto Base no Banco através do Service
                 ProdutoResponseDTO produtoSalvo = produtoService.salvar(produtoRequest);
                 log.info("[Catalog Seeder] Produto base cadastrado com sucesso: ID {}", produtoSalvo.id());
 
-                // 3. Criar Variação 1: Camiseta Preta M (Completa com Preço, Estoque, Opções e Imagens)
                 List<VariacaoOpcaoRequestDTO> opcoesVariacao1 = List.of(
                         new VariacaoOpcaoRequestDTO(idAtributoCor, "Preto"),
                         new VariacaoOpcaoRequestDTO(idAtributoTamanho, "M")
@@ -65,17 +60,16 @@ class CatalogDatabaseSeeder {
                 );
 
                 ProdutoVariacaoRequestDTO variacao1Request = new ProdutoVariacaoRequestDTO(
-                        "SKU-CAM-OVER-PRT-M",  // SKU Único
-                        new BigDecimal("129.90"), // Preço
-                        80,                       // Estoque Inicial
-                        opcoesVariacao1,          // Associação com Cor e Tamanho
-                        imagensVariacao1          // Imagens da variação
+                        "SKU-CAM-OVER-PRT-M",
+                        new BigDecimal("129.90"),
+                        80,
+                        opcoesVariacao1,
+                        imagensVariacao1
                 );
 
                 variacaoService.salvar(produtoSalvo.id(), variacao1Request);
                 log.info("[Catalog Seeder] Variação cadastrada: SKU-CAM-OVER-PRT-M (Preço: 129.90 | Estoque: 80)");
 
-                // 4. Criar Variação 2: Camiseta Preta G (Completa com Preço, Estoque, Opções e Imagens)
                 List<VariacaoOpcaoRequestDTO> opcoesVariacao2 = List.of(
                         new VariacaoOpcaoRequestDTO(idAtributoCor, "Preto"),
                         new VariacaoOpcaoRequestDTO(idAtributoTamanho, "G")
@@ -87,16 +81,15 @@ class CatalogDatabaseSeeder {
                 );
 
                 ProdutoVariacaoRequestDTO variacao2Request = new ProdutoVariacaoRequestDTO(
-                        "SKU-CAM-OVER-PRT-G",  // SKU Único
-                        new BigDecimal("134.90"), // Preço (Variação de tamanho maior pode custar um pouco mais)
-                        45,                       // Estoque Inicial
-                        opcoesVariacao2,          // Associação com Cor e Tamanho
-                        imagensVariacao2          // Imagens da variação
+                        "SKU-CAM-OVER-PRT-G",
+                        new BigDecimal("134.90"),
+                        45,
+                        opcoesVariacao2,
+                        imagensVariacao2
                 );
 
                 variacaoService.salvar(produtoSalvo.id(), variacao2Request);
                 log.info("[Catalog Seeder] Variação cadastrada: SKU-CAM-OVER-PRT-G (Preço: 134.90 | Estoque: 45)");
-
                 log.info("[Catalog Seeder] Carga inicial completa do catálogo finalizada com sucesso!");
 
             } catch (Exception e) {

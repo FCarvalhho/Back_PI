@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.catalog.internal.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -11,10 +7,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-/**
- *
- * @author Cansei2
- */
 @Entity
 @Table(name = "produto_variacao", schema = "catalog")
 public class ProdutoVariacao {

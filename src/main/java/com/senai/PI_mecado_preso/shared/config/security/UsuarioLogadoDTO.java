@@ -24,7 +24,6 @@ public class UsuarioLogadoDTO implements UserDetails {
     @Override public String getPassword() { return senha; }
     @Override public Collection<? extends GrantedAuthority> getAuthorities() { return authorities; }
 
-    // métodos de controle (pode retornar true para todos)
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked() { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }

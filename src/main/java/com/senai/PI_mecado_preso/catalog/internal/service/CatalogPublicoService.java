@@ -7,7 +7,6 @@ import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
 import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;

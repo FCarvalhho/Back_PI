@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.sales.internal.entity;
 
 import jakarta.persistence.Column;
@@ -16,10 +12,6 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-/**
- *
- * @author Cansei2
- */
 @Entity
 @Table(name = "item_pedido", schema = "sales")
 public class ItemPedido {
@@ -31,7 +23,6 @@ public class ItemPedido {
     @JoinColumn(name = "pedido_id", nullable = false)
     private Pedido pedido;
 
-    // SOFT FK
     @Column(name = "variacao_id", nullable = false)
     private UUID variacaoId;
 

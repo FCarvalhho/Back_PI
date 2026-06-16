@@ -35,4 +35,13 @@ class ModulithArchitectureTest {
                     "O módulo IAM precisa expor a interface nomeada 'api'");
         });
     }
+
+    @Test
+    void gerarDocumentacaoDoMonolito() {
+        // Correção: Métodos oficiais da API Documenter
+        new Documenter(modules)
+                .writeModulesAsPlantUml()           // Gera o diagrama macro do sistema
+                .writeIndividualModulesAsPlantUml() // Gera diagramas isolados por módulo
+                .writeModuleCanvases();             // Gera tabelas de metadados de cada módulo
+    }
 }

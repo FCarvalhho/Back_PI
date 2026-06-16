@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.shared.config.security;
 
 import org.springframework.context.annotation.Bean;
@@ -24,10 +20,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- *
- * @author Cansei2
- */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -49,7 +41,6 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/files/**").permitAll()
-
                         .requestMatchers(HttpMethod.GET, "/api/produto/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/iam/cliente").permitAll()
 
@@ -58,12 +49,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/produto/**").hasAnyAuthority("ROLE_ESTOQUE", "ROLE_ADMIN")
 
-                        .requestMatchers(HttpMethod.GET, "/admin/vendas-geral").hasAnyAuthority("ROLE_FATURAMENTO", "ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/iam/cliente").hasAnyAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/iam/funcionario").hasAnyAuthority("ROLE_ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/iam/funcionario").hasAnyAuthority("ROLE_ADMIN")
 
+                        .requestMatchers("/api/iam/cliente/*").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
+                        .requestMatchers("/api/iam/funcionario/*").hasAnyAuthority("ROLE_ADMIN", "ROLE_ESTOQUE", "ROLE_FATURAMENTO")
+
+                        .requestMatchers(HttpMethod.GET, "/admin/vendas-geral").hasAnyAuthority("ROLE_FATURAMENTO", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/pedidos").hasAnyAuthority("ROLE_ADMIN", "ROLE_FATURAMENTO")
+
                         .requestMatchers(HttpMethod.GET, "/api/pedidos/meus").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/pedidos").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
-                        .requestMatchers("/api/pedidos/carrinho/**").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
+
+                        .requestMatchers("/api/pedidos/carrinho", "/api/pedidos/carrinho/**").hasAnyAuthority("ROLE_CLIENTE", "ROLE_ADMIN")
 
                         .anyRequest().authenticated()
                 )
@@ -99,5 +98,4 @@ public class SecurityConfig {
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring().requestMatchers("/files/**");
     }
-
 }

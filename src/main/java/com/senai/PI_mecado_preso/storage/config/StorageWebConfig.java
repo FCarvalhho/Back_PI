@@ -15,9 +15,7 @@ public class StorageWebConfig implements WebMvcConfigurer {
         Path caminhoUploads = Paths.get("uploads");
         String caminhoAbsoluto = caminhoUploads.toFile().getAbsolutePath();
 
-        // Sempre que o navegador pedir /files/nome-da-imagem.png...
         registry.addResourceHandler("/files/**")
-                // ...o Spring vai buscar dentro da pasta física uploads/
                 .addResourceLocations("file:/" + caminhoAbsoluto + "/");
     }
 }

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.billing.internal.service;
 
 import com.senai.PI_mecado_preso.billing.api.PagamentoProcessadoEvent;
@@ -59,7 +55,6 @@ class PagamentoService implements PagamentoPublicaAPI {
         EstrategiaPagamento estrategia = fabricaEstrategia.obterEstrategia(metodo)
                 .orElseThrow(() -> new RegraDeNegocioException("Estratégia de gateway de pagamento não configurada para o método: " + metodo));
 
-        // 🌟 FLUXO ASSÍNCRONO: PIX E BOLETO
         if (metodo == MetodoPagamento.PIX || metodo == MetodoPagamento.BOLETO) {
             return CompletableFuture.supplyAsync(() -> {
                 ResultadoPadrao<String> dadosGerados = estrategia.processar(pagamento);
@@ -67,18 +62,14 @@ class PagamentoService implements PagamentoPublicaAPI {
                 String pixCodigo = (metodo == MetodoPagamento.PIX) ? dadosGerados.dado() : null;
                 String boletoLinha = (metodo == MetodoPagamento.BOLETO) ? dadosGerados.dado() : null;
 
-                // Simulação de Webhook/Liquidação assíncrona tardia
                 CompletableFuture.runAsync(() -> {
                     try {
-                        Thread.sleep(15000); // Cliente leva um tempo a pagar
+                        Thread.sleep(15000);
 
-                        // 🌟 Executa a liquidação dentro de um bloco transacional limpo na thread background
                         transactionTemplate.executeWithoutResult(status -> {
                             Pagamento p = pagamentoRepository.findById(pagamento.getId()).orElseThrow();
                             p.confirmar();
                             pagamentoRepository.save(p);
-
-                            // Pix e Boleto sempre notificam via evento pois são 100% assíncronos
                             eventPublisher.publishEvent(new PagamentoProcessadoEvent(request.pedidoId(), "PAGO"));
                         });
                     } catch (InterruptedException e) {
@@ -97,14 +88,11 @@ class PagamentoService implements PagamentoPublicaAPI {
             });
         }
 
-        // 🌟 FLUXO SÍNCRONO NÃO-BLOQUEANTE: CARTÕES (CRÉDITO/DÉBITO)
-        // Guardamos o estado do timeout de forma segura entre as threads
         final AtomicBoolean timeoutOcorreu = new AtomicBoolean(false);
 
         return CompletableFuture.supplyAsync(() -> {
                     ResultadoPadrao<String> resultadoGateway = estrategia.processar(pagamento);
 
-                    // 🌟 Encapsulamos a lógica numa transação programática para o Spring Modulith mapear corretamente
                     return transactionTemplate.execute(status -> {
                         Pagamento pagamentoFinal = pagamentoRepository.findById(pagamento.getId())
                                 .orElseThrow(() -> new RecursoNaoEncontradoException("Transação de pagamento não encontrada com o ID: " + pagamento.getId()));
@@ -120,7 +108,6 @@ class PagamentoService implements PagamentoPublicaAPI {
 
                         pagamentoRepository.save(pagamentoFinal);
 
-                        // 🔥 REQUISITO ESPECÍFICO: Só publica o evento se a thread principal já tiver estourado o timeout!
                         if (timeoutOcorreu.get()) {
                             eventPublisher.publishEvent(new PagamentoProcessadoEvent(request.pedidoId(), statusSugerido));
                         }
@@ -137,7 +124,6 @@ class PagamentoService implements PagamentoPublicaAPI {
                 .orTimeout(3, TimeUnit.SECONDS)
                 .exceptionally(erro -> {
                     if (erro instanceof TimeoutException || erro.getCause() instanceof TimeoutException) {
-                        // 🌟 O timeout aconteceu na thread HTTP principal! Ativamos a flag.
                         timeoutOcorreu.set(true);
                         return ResultadoPadrao.success(new CobrancaResponseDTO(
                                 false,
