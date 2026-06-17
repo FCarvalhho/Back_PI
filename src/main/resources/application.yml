@@ -1,3 +1,7 @@
+server:
+  port: 8080
+  address: 0.0.0.0 # Permite que a aplicação escute em todas as interfaces de rede (LAN)
+
 spring:
   application:
     name: PI-mecado-preso
@@ -23,6 +27,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: false
+
 logging:
   level:
     org:
@@ -35,6 +40,7 @@ logging:
     springframework:
       security: DEBUG
       web: DEBUG
+
 api:
   security:
     token:
@@ -43,4 +49,3 @@ api:
     admin:
       email: "admin@vendas.com"
       password: "admin123"
-
