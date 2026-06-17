@@ -5,6 +5,11 @@ server:
 spring:
   application:
     name: PI-mecado-preso
+    
+  web:
+    resources:
+      static-locations: "file:uploads/"
+      
   servlet:
     multipart:
       max-file-size: 10MB
