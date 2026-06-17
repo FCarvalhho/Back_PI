@@ -69,10 +69,18 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({RegraDeNegocioException.class, QueryInvalidaException.class})
     public ResponseEntity<ApiErrorResponse> handleRegraDeNegocio(RuntimeException ex) {
-        HttpStatus status = HttpStatus.BAD_REQUEST;
+        HttpStatus status = HttpStatus.BAD_REQUEST; 
+        
+        String titulo = "Erro na Requisição";
+        if (ex instanceof RegraDeNegocioException) {
+            titulo = "Regra de Negócio Violada";
+        } else if (ex instanceof QueryInvalidaException) {
+            titulo = "Parâmetros de Consulta Inválidos";
+        }
+
         ApiErrorResponse error = new ApiErrorResponse(
                 status.value(),
-                "Regra de Negócio Violada",
+                titulo, 
                 ex.getMessage(),
                 OffsetDateTime.now(),
                 List.of()

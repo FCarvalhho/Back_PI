@@ -33,7 +33,7 @@ class PagamentoServicePixTest {
     @Mock private PagamentoRepository pagamentoRepository;
     @Mock private FabricaEstrategiaPagamento fabricaEstrategia;
     @Mock private ApplicationEventPublisher eventPublisher;
-    @Mock private TransactionTemplate transactionTemplate; // Pode continuar mockado se o service o recebe no construtor
+    @Mock private TransactionTemplate transactionTemplate; 
     @Mock private EstrategiaPagamento estrategiaPagamento;
 
     @InjectMocks private PagamentoService pagamentoService;
@@ -41,7 +41,6 @@ class PagamentoServicePixTest {
     @Test
     @DisplayName("Deve gerar cobrança PIX com status PENDENTE e código copia e cola preenchido")
     void deveProcessarPixAssincronamente() throws InterruptedException, ExecutionException {
-        // Arrange
         UUID pedidoId = UUID.randomUUID();
         CobrancaRequestDTO request = new CobrancaRequestDTO(pedidoId, new BigDecimal("250.00"), "PIX", 1);
         
@@ -52,14 +51,9 @@ class PagamentoServicePixTest {
         when(fabricaEstrategia.obterEstrategia(MetodoPagamento.PIX)).thenReturn(Optional.of(estrategiaPagamento));
         when(estrategiaPagamento.processar(any(Pagamento.class))).thenReturn(ResultadoPadrao.success(chavePixEsperada));
 
-        // REMOVIDO: O bloco when(transactionTemplate.execute(...)) foi retirado 
-        // porque o fluxo do PIX não utiliza controle transacional programático aqui.
-
-        // Act
         CompletableFuture<ResultadoPadrao<CobrancaResponseDTO>> future = pagamentoService.processarCobranca(request);
         ResultadoPadrao<CobrancaResponseDTO> resultado = future.get();
 
-        // Assert
         assertNotNull(resultado);
         assertTrue(resultado.isValid());
         CobrancaResponseDTO responseDTO = resultado.dado();

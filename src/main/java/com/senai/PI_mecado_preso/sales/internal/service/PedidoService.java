@@ -1,3 +1,4 @@
+
 package com.senai.PI_mecado_preso.sales.internal.service;
 
 import com.senai.PI_mecado_preso.billing.api.CobrancaRequestDTO;
@@ -50,8 +51,8 @@ public class PedidoService {
     @Transactional
     public CheckoutResponseDTO criarPedido(PedidoRequestDTO request) {
 
-        ResultadoPadrao<PedidoUsuarioDTO> resultadoUsuario =
-                iamPublicAPI.obterUsuario(request.clienteId());
+        ResultadoPadrao<PedidoUsuarioDTO> resultadoUsuario
+                = iamPublicAPI.obterUsuario(request.clienteId());
 
         if (!resultadoUsuario.isValid()) {
             throw new RegraDeNegocioException(
@@ -60,19 +61,19 @@ public class PedidoService {
             );
         }
 
-        Map<UUID, ItemValidacaoRequestDTO> itensValidacao =
-                request.itens()
-                        .stream()
-                        .collect(Collectors.toMap(
-                                ItemPedidoRequestDTO::variacaoId,
-                                item -> new ItemValidacaoRequestDTO(
-                                        item.quantidade(),
-                                        item.precoUnitario()
-                                )
-                        ));
+        Map<UUID, ItemValidacaoRequestDTO> itensValidacao
+                = request.itens()
+                .stream()
+                .collect(Collectors.toMap(
+                        ItemPedidoRequestDTO::variacaoId,
+                        item -> new ItemValidacaoRequestDTO(
+                                item.quantidade(),
+                                item.precoUnitario()
+                        )
+                ));
 
-        ResultadoPadrao<ValidacaoProdutosDTO> validacaoProdutos =
-                catalogoEstoqueAPI.validarProdutos(itensValidacao);
+        ResultadoPadrao<ValidacaoProdutosDTO> validacaoProdutos
+                = catalogoEstoqueAPI.validarProdutos(itensValidacao);
 
         if (!validacaoProdutos.isValid()) {
             throw new RegraDeNegocioException(
@@ -80,8 +81,8 @@ public class PedidoService {
             );
         }
 
-        ValidacaoProdutosDTO dadosProdutos =
-                validacaoProdutos.dado();
+        ValidacaoProdutosDTO dadosProdutos
+                = validacaoProdutos.dado();
 
         Pedido pedido = new Pedido();
         pedido.setClienteId(request.clienteId());
@@ -90,8 +91,8 @@ public class PedidoService {
 
         Map<UUID, Integer> itensParaBaixa = new HashMap<>();
 
-        for (ItemValidadoDTO itemValidado :
-                dadosProdutos.itens().values()) {
+        for (ItemValidadoDTO itemValidado
+                : dadosProdutos.itens().values()) {
 
             ItemPedido itemPedido = new ItemPedido();
 
@@ -116,8 +117,8 @@ public class PedidoService {
             );
         }
 
-        ResultadoPadrao<?> baixaEstoque =
-                catalogoEstoqueAPI.baixarEstoque(itensParaBaixa);
+        ResultadoPadrao<?> baixaEstoque
+                = catalogoEstoqueAPI.baixarEstoque(itensParaBaixa);
 
         if (!baixaEstoque.isValid()) {
             throw new RegraDeNegocioException(
@@ -128,18 +129,18 @@ public class PedidoService {
 
         pedido = pedidoRepository.save(pedido);
 
-        CobrancaRequestDTO cobrancaRequest =
-                new CobrancaRequestDTO(
-                        pedido.getId(),
-                        pedido.getValorTotal(),
-                        request.metodoPagamento(),
-                        request.parcelas()
-                );
+        CobrancaRequestDTO cobrancaRequest
+                = new CobrancaRequestDTO(
+                pedido.getId(),
+                pedido.getValorTotal(),
+                request.metodoPagamento(),
+                request.parcelas()
+        );
 
-        ResultadoPadrao<CobrancaResponseDTO> resultadoCobranca =
-                pagamentoPublicaAPI
-                        .processarCobranca(cobrancaRequest)
-                        .join();
+        ResultadoPadrao<CobrancaResponseDTO> resultadoCobranca
+                = pagamentoPublicaAPI
+                .processarCobranca(cobrancaRequest)
+                .join();
 
         if (resultadoCobranca == null
                 || !resultadoCobranca.isValid()) {
@@ -149,8 +150,8 @@ public class PedidoService {
             );
         }
 
-        CobrancaResponseDTO dadosCobranca =
-                resultadoCobranca.dado();
+        CobrancaResponseDTO dadosCobranca
+                = resultadoCobranca.dado();
 
         if ("PAGO".equals(dadosCobranca.statusSugerido())) {
 
@@ -175,8 +176,8 @@ public class PedidoService {
 
         this.carrinhoService.removerItensCompradosDoCarrinho(request.clienteId(), variacoesCompradasIds);
 
-        PedidoCriadoResponseDTO pedidoResponse =
-                pedidoMapper.toCriadoResponse(pedido);
+        PedidoCriadoResponseDTO pedidoResponse
+                = pedidoMapper.toCriadoResponse(pedido);
 
         return new CheckoutResponseDTO(
                 pedidoResponse,
@@ -219,7 +220,22 @@ public class PedidoService {
         Map<UUID, PedidoUsuarioDTO> mapaUsuarios = resultadoUsuarios.isValid() ? resultadoUsuarios.dado() : Map.of();
 
         ResultadoPadrao<Map<UUID, DetalheItemCatalogoDTO>> resultadoItens = catalogoEstoqueAPI.obterItens(variacoesIds);
-        Map<UUID, DetalheItemCatalogoDTO> mapaItens = resultadoItens.isValid() ? resultadoItens.dado() : Map.of();
+        Map<UUID, DetalheItemCatalogoDTO> mapaItens = new HashMap<>();
+
+        if (resultadoItens.isValid() && resultadoItens.dado() != null) {
+            mapaItens.putAll(resultadoItens.dado());
+        } else {
+            for (UUID varId : variacoesIds) {
+                try {
+                    ResultadoPadrao<Map<UUID, DetalheItemCatalogoDTO>> buscaIndividual = catalogoEstoqueAPI.obterItens(Set.of(varId));
+                    if (buscaIndividual.isValid() && buscaIndividual.dado() != null) {
+                        mapaItens.putAll(buscaIndividual.dado());
+                    }
+                } catch (Exception e) {
+                    // Ignora falhas de itens individuais que foram fisicamente removidos do banco de dados
+                }
+            }
+        }
 
         return pedidos.stream().map(pedido -> {
             PedidoUsuarioDTO clienteDto = mapaUsuarios.getOrDefault(pedido.getClienteId(),
@@ -228,13 +244,20 @@ public class PedidoService {
             List<ItemPedidoDetalhadoResponseDTO> itensDtos = pedido.getItens().stream().map(item -> {
                 DetalheItemCatalogoDTO detalheCatalogo = mapaItens.get(item.getVariacaoId());
 
-                PedidoVariacaoExibicaoDTO variacaoExibicao = null;
+                PedidoVariacaoExibicaoDTO variacaoExibicao;
                 if (detalheCatalogo != null) {
                     variacaoExibicao = new PedidoVariacaoExibicaoDTO(
                             item.getVariacaoId(),
                             detalheCatalogo.nomeProduto(),
                             detalheCatalogo.sku(),
                             detalheCatalogo.detalhes() != null ? detalheCatalogo.detalhes() : "Variação Padrão"
+                    );
+                } else {
+                    variacaoExibicao = new PedidoVariacaoExibicaoDTO(
+                            item.getVariacaoId(),
+                            "Produto Removido do Catálogo",
+                            "N/A",
+                            "Especificações técnicas indisponíveis"
                     );
                 }
 

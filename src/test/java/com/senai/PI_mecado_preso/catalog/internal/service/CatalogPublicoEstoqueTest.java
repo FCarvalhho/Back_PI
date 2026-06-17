@@ -31,7 +31,6 @@ class CatalogPublicoEstoqueTest {
     @Test
     @DisplayName("Deve retornar falha estruturada quando a quantidade solicitada for maior que o estoque")
     void deveRetornarFalhaQuandoEstoqueForInsuficiente() {
-        // Arrange
         UUID variacaoId = UUID.randomUUID();
         Map<UUID, Integer> quantidadesSolicitadas = Map.of(variacaoId, 10);
 
@@ -43,10 +42,8 @@ class CatalogPublicoEstoqueTest {
         when(variacaoRepository.findAllById(quantidadesSolicitadas.keySet()))
                 .thenReturn(List.of(variacaoFicticia));
 
-        // Act
         ResultadoPadrao<?> resultado = catalogPublicoService.baixarEstoque(quantidadesSolicitadas);
 
-        // Assert
         assertNotNull(resultado, "O resultado não deve ser nulo");
         assertFalse(resultado.isValid(), "O resultado deveria ser inválido devido à falta de estoque");
         assertTrue(resultado.failureReason().contains("Falha ao baixar estoque"), "A mensagem de falha deve ser condizente");
