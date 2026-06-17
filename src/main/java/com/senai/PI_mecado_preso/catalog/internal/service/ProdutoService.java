@@ -9,6 +9,7 @@ import com.senai.PI_mecado_preso.catalog.internal.mapper.ProdutoMapper;
 import com.senai.PI_mecado_preso.catalog.internal.repository.AtributoRepository;
 import com.senai.PI_mecado_preso.catalog.internal.repository.ProdutoRepository;
 import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
+import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +32,7 @@ public class ProdutoService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProdutoResponseDTO> listar(){
+    public List<ProdutoResponseDTO> listar() {
         return repository.findAll().stream()
                 .map(mapper::toResponse)
                 .collect(Collectors.toList());
@@ -49,7 +50,7 @@ public class ProdutoService {
     }
 
     @Transactional
-    public ProdutoResponseDTO salvar(ProdutoRequestDTO dto){
+    public ProdutoResponseDTO salvar(ProdutoRequestDTO dto) {
         Produto produto = mapper.toEntity(dto);
         produto.setAtributos(new ArrayList<>());
 
@@ -62,7 +63,7 @@ public class ProdutoService {
     }
 
     @Transactional
-    public ProdutoResponseDTO atualizar(UUID id, ProdutoRequestDTO dto){
+    public ProdutoResponseDTO atualizar(UUID id, ProdutoRequestDTO dto) {
         Produto produto = buscarEntityPorId(id);
         mapper.updateEntityFromDto(dto, produto);
 
@@ -77,10 +78,32 @@ public class ProdutoService {
     }
 
     @Transactional
-    public void deletar(UUID id){
+    public void inativar(UUID id) {
         Produto produto = buscarEntityPorId(id);
+
+        if (!produto.getAtivo()) {
+            throw new RegraDeNegocioException("O produto com o ID: " + id + " já está inativado.");
+        }
+
         produto.setAtivo(false);
         repository.save(produto);
+    }
+
+    @Transactional
+    public void ativar(UUID id) {
+        Produto produto = buscarEntityPorId(id);
+
+        if (produto.getAtivo()) {
+            throw new RegraDeNegocioException("O produto com o ID: " + id + " já está ativo.");
+        }
+
+        produto.setAtivo(true);
+        repository.save(produto);
+    }
+
+    @Transactional
+    public void deletar(UUID id) {
+        inativar(id);
     }
 
     private void vincularAtributos(Produto produto, List<UUID> atributosIds) {

@@ -1,6 +1,10 @@
 spring:
   application:
     name: PI-mecado-preso
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   datasource:
     url: jdbc:postgresql://localhost:5432/Mercado-Preso
     username: postgres
@@ -24,9 +28,13 @@ logging:
     org:
       hibernate:
         sql: INFO
+        SQL: DEBUG
         orm:
           jdbc:
             bind: INFO
+    springframework:
+      security: DEBUG
+      web: DEBUG
 api:
   security:
     token:
@@ -35,3 +43,4 @@ api:
     admin:
       email: "admin@vendas.com"
       password: "admin123"
+

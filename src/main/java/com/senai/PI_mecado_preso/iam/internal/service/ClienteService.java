@@ -7,6 +7,7 @@ import com.senai.PI_mecado_preso.iam.internal.entity.Role;
 import com.senai.PI_mecado_preso.iam.internal.mapper.ClienteMapper;
 import com.senai.PI_mecado_preso.iam.internal.repository.ClienteRepository;
 import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
+import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,5 +88,31 @@ public class ClienteService {
     @Transactional
     public void deletar(UUID id) {
         repository.delete(buscarEntityPorId(id));
+    }
+
+    @Transactional
+    public void inativarCliente(UUID id) {
+        Cliente cliente = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado com o ID fornecido."));
+
+        if (!cliente.getAtivo()) {
+            throw new RegraDeNegocioException("Este cliente já se encontra inativo no sistema.");
+        }
+
+        cliente.setAtivo(false);
+        repository.save(cliente);
+    }
+
+    @Transactional
+    public void ativarCliente(UUID id) {
+        Cliente cliente = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado com o ID fornecido."));
+
+        if (cliente.getAtivo()) {
+            throw new RegraDeNegocioException("Este cliente já se encontra ativo no sistema.");
+        }
+
+        cliente.setAtivo(true);
+        repository.save(cliente);
     }
 }

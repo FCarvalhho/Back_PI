@@ -13,7 +13,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/iam/funcionario")
 public class FuncionarioController {
-    
+
     private final FuncionarioService service;
 
     public FuncionarioController(FuncionarioService service) {
@@ -41,8 +41,31 @@ public class FuncionarioController {
     }
 
     @PatchMapping("/{id}/delete")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> alterarStatus(@PathVariable UUID id) {
-        service.deletar(id);
+        // Busca a entidade atual apenas para ler o estado do booleano
+        var funcionario = service.buscarEntityPorId(id); 
+
+        if (funcionario.getAtivo()) {
+            service.inativarFuncionario(id);
+        } else {
+            service.ativarFuncionario(id);
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/inativar")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> inativar(@PathVariable UUID id) {
+        service.inativarFuncionario(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/ativar")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> ativar(@PathVariable UUID id) {
+        service.ativarFuncionario(id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -45,15 +45,12 @@ class PagamentoServiceCartaoTest {
     @Test
     @DisplayName("Deve processar cobrança de cartão de crédito com sucesso de forma síncrona")
     void deveProcessarCartaoCreditoComSucesso() throws InterruptedException, ExecutionException {
-        // Arrange
         UUID pedidoId = UUID.randomUUID();
         CobrancaRequestDTO request = new CobrancaRequestDTO(pedidoId, new BigDecimal("150.00"), "CREDITO_CARD", 1);
         
         Pagamento pagamentoSalvo = new Pagamento(pedidoId, request.valor(), MetodoPagamento.CREDITO_CARD, 1);
         pagamentoSalvo.setId(UUID.randomUUID());
 
-        // ALTERAÇÃO 1: Como o save é chamado duas vezes, configuramos o mock para retornar o objeto
-        // nas duas interações consecutivas.
         when(pagamentoRepository.save(any(Pagamento.class))).thenReturn(pagamentoSalvo).thenReturn(pagamentoSalvo);
         
         when(fabricaEstrategia.obterEstrategia(MetodoPagamento.CREDITO_CARD)).thenReturn(Optional.of(estrategiaPagamento));
@@ -65,11 +62,9 @@ class PagamentoServiceCartaoTest {
             return callback.doInTransaction(null);
         });
 
-        // Act
         CompletableFuture<ResultadoPadrao<CobrancaResponseDTO>> future = pagamentoService.processarCobranca(request);
         ResultadoPadrao<CobrancaResponseDTO> resultado = future.get();
 
-        // Assert
         assertNotNull(resultado);
         assertTrue(resultado.isValid());
         CobrancaResponseDTO dto = resultado.dado();
@@ -77,8 +72,6 @@ class PagamentoServiceCartaoTest {
         assertEquals("PAGO", dto.statusSugerido());
         assertEquals("Cartão autorizado.", dto.mensagem());
 
-        // ALTERAÇÃO 2: Mudamos de times(1) para times(2), pois o service salva no início 
-        // e depois atualiza o status salvando de novo dentro da lambda.
         verify(pagamentoRepository, times(2)).save(any(Pagamento.class));
         verify(estrategiaPagamento, times(1)).processar(any(Pagamento.class));
     }

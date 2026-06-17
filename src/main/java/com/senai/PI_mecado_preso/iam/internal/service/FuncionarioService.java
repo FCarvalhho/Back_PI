@@ -7,6 +7,7 @@ import com.senai.PI_mecado_preso.iam.internal.entity.Role;
 import com.senai.PI_mecado_preso.iam.internal.mapper.FuncionarioMapper;
 import com.senai.PI_mecado_preso.iam.internal.repository.FuncionarioRepository;
 import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
+import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,5 +100,43 @@ public class FuncionarioService {
     @Transactional
     public void deletar(UUID id) {
         repositoryFuncionario.delete(buscarEntityPorId(id));
+    }
+
+    @Transactional
+    public void inativarFuncionario(UUID id) {
+        Funcionario funcionario = repositoryFuncionario.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Funcionário não encontrado com o ID fornecido."));
+
+        if (!funcionario.getAtivo()) {
+            throw new RegraDeNegocioException("Este funcionário já se encontra inativo no sistema.");
+        }
+
+        if ("ADMIN-MASTER".equals(funcionario.getMatricula())) {
+            throw new RegraDeNegocioException("O Administrador Master do sistema é vital e não pode ser inativado.");
+        }
+
+        org.springframework.security.core.Authentication authentication
+                = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof com.senai.PI_mecado_preso.iam.internal.entity.Usuario usuarioLogado) {
+            if (usuarioLogado.getId().equals(id)) {
+                throw new RegraDeNegocioException("Segurança bloqueada: Você não pode inativar a sua própria conta.");
+            }
+        }
+
+        funcionario.setAtivo(false);
+        repositoryFuncionario.save(funcionario);
+    }
+
+    @Transactional
+    public void ativarFuncionario(UUID id) {
+        Funcionario funcionario = repositoryFuncionario.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Funcionário não encontrado com o ID fornecido."));
+
+        if (funcionario.getAtivo()) {
+            throw new RegraDeNegocioException("Este funcionário já se encontra ativo no sistema.");
+        }
+
+        funcionario.setAtivo(true);
+        repositoryFuncionario.save(funcionario);
     }
 }
