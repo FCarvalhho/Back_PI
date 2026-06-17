@@ -1,4 +1,4 @@
-package com.senai.PI_mecado_preso.storage.config;
+package com.senai.PI_mecado_preso.shared.config.web;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -8,14 +8,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Configuration
-public class StorageWebConfig implements WebMvcConfigurer {
+public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        Path caminhoUploads = Paths.get("uploads");
-        String caminhoAbsoluto = caminhoUploads.toFile().getAbsolutePath();
+        Path uploadDir = Paths.get("uploads");
+        String uploadPath = uploadDir.toAbsolutePath().toUri().toString();
 
         registry.addResourceHandler("/files/**")
-                .addResourceLocations("file:/" + caminhoAbsoluto + "/");
+                .addResourceLocations(uploadPath);
     }
 }

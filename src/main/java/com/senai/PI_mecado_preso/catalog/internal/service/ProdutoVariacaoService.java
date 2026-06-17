@@ -1,3 +1,4 @@
+
 package com.senai.PI_mecado_preso.catalog.internal.service;
 
 import com.senai.PI_mecado_preso.catalog.api.dtos.*;
@@ -18,7 +19,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class ProdutoVariacaoService{
+public class ProdutoVariacaoService {
 
     private final ProdutoVariacaoRepository repository;
     private final ProdutoVariacaoMapper mapper;
@@ -33,7 +34,7 @@ public class ProdutoVariacaoService{
     }
 
     @Transactional(readOnly = true)
-    public List<ProdutoVariacaoResponseDTO> listar(){
+    public List<ProdutoVariacaoResponseDTO> listar() {
         return repository.findAll().stream()
                 .map(mapper::toResponse)
                 .collect(Collectors.toList());
@@ -51,7 +52,7 @@ public class ProdutoVariacaoService{
     }
 
     @Transactional
-    public ProdutoVariacaoResponseDTO salvar(UUID produtoID, ProdutoVariacaoRequestDTO dto){
+    public ProdutoVariacaoResponseDTO salvar(UUID produtoID, ProdutoVariacaoRequestDTO dto) {
         ProdutoVariacao produtoVariacao = mapper.toEntity(dto);
         produtoVariacao.setProduto(produtoService.buscarEntityPorId(produtoID));
         produtoVariacao.setOpcoes(new ArrayList<>());
@@ -78,13 +79,13 @@ public class ProdutoVariacaoService{
             produtoVariacao.setEstoque(dto.estoque());
         }
 
-        if (dto.opcoes() != null && !dto.opcoes().isEmpty()) {
+        if (dto.opcoes() != null) {
             produtoVariacao.getOpcoes().clear();
             repository.saveAndFlush(produtoVariacao);
             processarOpcoes(produtoVariacao, dto.opcoes());
         }
 
-        if (dto.imagens() != null && !dto.imagens().isEmpty()) {
+        if (dto.imagens() != null) {
             produtoVariacao.getImagens().clear();
             repository.saveAndFlush(produtoVariacao);
             processarImagens(produtoVariacao, dto.imagens());
@@ -95,7 +96,7 @@ public class ProdutoVariacaoService{
     }
 
     @Transactional
-    public void deletar(UUID id){
+    public void deletar(UUID id) {
         if (!repository.existsById(id)) {
             throw new RecursoNaoEncontradoException("Não foi possível deletar. Variação não encontrada com o ID: " + id);
         }
@@ -103,9 +104,11 @@ public class ProdutoVariacaoService{
     }
 
     private void processarOpcoes(ProdutoVariacao produtoVariacao, List<VariacaoOpcaoRequestDTO> opcoesDto) {
-        if (opcoesDto == null || opcoesDto.isEmpty()) return;
+        if (opcoesDto == null || opcoesDto.isEmpty()) {
+            return;
+        }
 
-        for (VariacaoOpcaoRequestDTO opcao : opcoesDto){
+        for (VariacaoOpcaoRequestDTO opcao : opcoesDto) {
             Atributo atributo = atributoRepository.findById(opcao.atributoId())
                     .orElseThrow(() -> new RecursoNaoEncontradoException("Não foi possível processar opção. Atributo não encontrado com o ID: " + opcao.atributoId()));
 
@@ -119,9 +122,11 @@ public class ProdutoVariacaoService{
     }
 
     private void processarImagens(ProdutoVariacao produtoVariacao, List<ImagemVariacaoRequestDTO> imagensDto) {
-        if (imagensDto == null || imagensDto.isEmpty()) return;
+        if (imagensDto == null || imagensDto.isEmpty()) {
+            return;
+        }
 
-        for (ImagemVariacaoRequestDTO imagem : imagensDto){
+        for (ImagemVariacaoRequestDTO imagem : imagensDto) {
             ImagemVariacao imagemVariacao = new ImagemVariacao();
             imagemVariacao.setUrlImagem(imagem.urlImagem());
             imagemVariacao.setOrdem(imagem.ordem());

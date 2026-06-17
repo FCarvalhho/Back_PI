@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.iam.internal.service;
 
 import com.senai.PI_mecado_preso.iam.api.dtos.ClienteRequestDTO;
@@ -11,6 +7,7 @@ import com.senai.PI_mecado_preso.iam.internal.entity.Role;
 import com.senai.PI_mecado_preso.iam.internal.mapper.ClienteMapper;
 import com.senai.PI_mecado_preso.iam.internal.repository.ClienteRepository;
 import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
+import com.senai.PI_mecado_preso.shared.exception.RegraDeNegocioException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +17,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- *
- * @author Cansei2
- */
 @Service
 public class ClienteService {
 
@@ -36,16 +29,17 @@ public class ClienteService {
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
     }
+
     @Transactional(readOnly = true)
-    public List<ClienteResponseDTO> listarTodos(){
-        return repository.findAll().stream().map(mapper :: toResponse).collect(Collectors.toList());
+    public List<ClienteResponseDTO> listarTodos() {
+        return repository.findAll().stream().map(mapper::toResponse).collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public Cliente buscarEntityPorId(UUID id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado com o ID: " + id));
-    
+
     }
 
     @Transactional(readOnly = true)
@@ -55,10 +49,15 @@ public class ClienteService {
 
     @Transactional
     public ClienteResponseDTO salvar(ClienteRequestDTO request) {
+        if (request.senha() == null || request.senha().isBlank()) {
+            throw new IllegalArgumentException("A senha é obrigatória para efetuar o cadastro.");
+        }
+        if (request.senha().length() < 6 || request.senha().length() > 100) {
+            throw new IllegalArgumentException("A senha deve conter entre 6 e 100 caracteres.");
+        }
+
         Cliente entidade = mapper.toEntity(request);
-
         entidade.setRoles(Set.of(Role.ROLE_CLIENTE));
-
         entidade.setSenha(passwordEncoder.encode(request.senha()));
 
         Cliente salvo = repository.save(entidade);
@@ -70,16 +69,50 @@ public class ClienteService {
         Cliente existente = repository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Não foi possível atualizar. Cliente não encontrado com o ID: " + id));
 
-        mapper.updateEntityFromDto(request, existente);
+        String senhaOriginalDoBanco = existente.getSenha();
 
-        existente.setSenha(passwordEncoder.encode(request.senha()));
+        mapper.updateEntityFromDto(request, existente);
+        if (request.senha() != null && !request.senha().isBlank()) {
+            if (request.senha().length() < 6 || request.senha().length() > 100) {
+                throw new IllegalArgumentException("A nova senha deve conter entre 6 e 100 caracteres.");
+            }
+            existente.setSenha(passwordEncoder.encode(request.senha()));
+        } else {
+            existente.setSenha(senhaOriginalDoBanco);
+        }
 
         repository.save(existente);
         return mapper.toResponse(existente);
     }
 
     @Transactional
-    public void deletar(UUID id){
+    public void deletar(UUID id) {
         repository.delete(buscarEntityPorId(id));
+    }
+
+    @Transactional
+    public void inativarCliente(UUID id) {
+        Cliente cliente = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado com o ID fornecido."));
+
+        if (!cliente.getAtivo()) {
+            throw new RegraDeNegocioException("Este cliente já se encontra inativo no sistema.");
+        }
+
+        cliente.setAtivo(false);
+        repository.save(cliente);
+    }
+
+    @Transactional
+    public void ativarCliente(UUID id) {
+        Cliente cliente = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Cliente não encontrado com o ID fornecido."));
+
+        if (cliente.getAtivo()) {
+            throw new RegraDeNegocioException("Este cliente já se encontra ativo no sistema.");
+        }
+
+        cliente.setAtivo(true);
+        repository.save(cliente);
     }
 }

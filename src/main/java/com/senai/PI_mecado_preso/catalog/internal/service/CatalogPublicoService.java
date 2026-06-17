@@ -7,7 +7,6 @@ import com.senai.PI_mecado_preso.shared.dto.ResultadoPadrao;
 import com.senai.PI_mecado_preso.shared.exception.RecursoNaoEncontradoException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,9 +15,11 @@ import java.util.stream.Collectors;
 class CatalogPublicoService implements CatalogoPublicaAPI {
 
     private final ProdutoVariacaoRepository variacaoRepository;
+    private final ProdutoService produtoService;
 
-    public CatalogPublicoService(ProdutoVariacaoRepository variacaoRepository) {
+    public CatalogPublicoService(ProdutoVariacaoRepository variacaoRepository, ProdutoService produtoService) {
         this.variacaoRepository = variacaoRepository;
+        this.produtoService = produtoService;
     }
 
     @Override
@@ -90,7 +91,6 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
 
         for (ProdutoVariacao pv : variacoes) {
 
-
             String detalhesString = pv.getOpcoes().stream()
                     .map(opcao -> {
                         String nomeAtributo = (opcao.getAtributo() != null) ? opcao.getAtributo().getNome() : "Opção";
@@ -121,8 +121,8 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
     @Transactional
     public ResultadoPadrao<?> baixarEstoque(Map<UUID, Integer> quantidades) {
 
-        List<ProdutoVariacao> variacoes =
-                variacaoRepository.findAllById(quantidades.keySet());
+        List<ProdutoVariacao> variacoes
+                = variacaoRepository.findAllById(quantidades.keySet());
 
         if (variacoes.size() != quantidades.size()) {
 
@@ -137,30 +137,30 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
 
             throw new RecursoNaoEncontradoException(
                     "Variação de produto não encontrada para baixa com o ID: "
-                            + faltante
+                    + faltante
             );
         }
 
         for (ProdutoVariacao variacao : variacoes) {
 
-            Integer quantidadeSolicitada =
-                    quantidades.get(variacao.getId());
+            Integer quantidadeSolicitada
+                    = quantidades.get(variacao.getId());
 
             if (variacao.getEstoque() < quantidadeSolicitada) {
                 return ResultadoPadrao.failure(
                         "Falha ao baixar estoque. Produto "
-                                + variacao.getId()
-                                + " possui apenas "
-                                + variacao.getEstoque()
-                                + " unidades disponíveis."
+                        + variacao.getId()
+                        + " possui apenas "
+                        + variacao.getEstoque()
+                        + " unidades disponíveis."
                 );
             }
         }
 
         for (ProdutoVariacao variacao : variacoes) {
 
-            Integer quantidadeSolicitada =
-                    quantidades.get(variacao.getId());
+            Integer quantidadeSolicitada
+                    = quantidades.get(variacao.getId());
 
             variacao.setEstoque(
                     variacao.getEstoque() - quantidadeSolicitada
@@ -170,4 +170,29 @@ class CatalogPublicoService implements CatalogoPublicaAPI {
         return ResultadoPadrao.success();
     }
 
+    @Override
+    @Transactional
+    public ResultadoPadrao<?> inativarProdutoViaApi(UUID produtoId) {
+        try {
+            produtoService.inativar(produtoId);
+            return ResultadoPadrao.success("Produto inativado com sucesso no catálogo.");
+        } catch (RecursoNaoEncontradoException e) {
+            return ResultadoPadrao.failure("Não foi possível inativar: Produto não encontrado.");
+        } catch (Exception e) {
+            return ResultadoPadrao.failure("Erro ao tentar inativar produto: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public ResultadoPadrao<?> ativarProdutoViaApi(UUID produtoId) {
+        try {
+            produtoService.ativar(produtoId);
+            return ResultadoPadrao.success("Produto ativado com sucesso no catálogo.");
+        } catch (RecursoNaoEncontradoException e) {
+            return ResultadoPadrao.failure("Não foi possível ativar: Produto não encontrado.");
+        } catch (Exception e) {
+            return ResultadoPadrao.failure("Erro ao tentar ativar produto: " + e.getMessage());
+        }
+    }
 }

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.senai.PI_mecado_preso.iam.web.controller;
 
 import com.senai.PI_mecado_preso.iam.api.dtos.FuncionarioRequestDTO;
@@ -14,14 +10,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-/**
- *
- * @author Cansei2
- */
 @RestController
 @RequestMapping("/api/iam/funcionario")
 public class FuncionarioController {
-    
+
     private final FuncionarioService service;
 
     public FuncionarioController(FuncionarioService service) {
@@ -49,8 +41,31 @@ public class FuncionarioController {
     }
 
     @PatchMapping("/{id}/delete")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> alterarStatus(@PathVariable UUID id) {
-        service.deletar(id);
+        // Busca a entidade atual apenas para ler o estado do booleano
+        var funcionario = service.buscarEntityPorId(id); 
+
+        if (funcionario.getAtivo()) {
+            service.inativarFuncionario(id);
+        } else {
+            service.ativarFuncionario(id);
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/inativar")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> inativar(@PathVariable UUID id) {
+        service.inativarFuncionario(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/ativar")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> ativar(@PathVariable UUID id) {
+        service.ativarFuncionario(id);
         return ResponseEntity.noContent().build();
     }
 }

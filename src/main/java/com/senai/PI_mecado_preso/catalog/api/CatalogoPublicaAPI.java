@@ -19,4 +19,7 @@ public interface CatalogoPublicaAPI {
     ResultadoPadrao<Map<UUID, DetalheItemCatalogoDTO>> obterItens(
             Set<UUID> itens
     );
+    
+    ResultadoPadrao<?> inativarProdutoViaApi(UUID produtoId);
+    ResultadoPadrao<?> ativarProdutoViaApi(UUID produtoId);
 }

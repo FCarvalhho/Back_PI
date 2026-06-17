@@ -42,10 +42,29 @@ public class ProdutoController {
         ProdutoResponseDTO response = service.atualizar(id, request);
         return ResponseEntity.ok(response);
     }
-
+    
     @PatchMapping("/{id}/delete")
-    public ResponseEntity<Void> alterarStatus(@PathVariable @Valid UUID id) {
-        service.deletar(id);
+    public ResponseEntity<Void> alterarStatus(@PathVariable UUID id) {
+        var produto = service.buscarEntityPorId(id); 
+
+        if (produto.getAtivo()) {
+            service.inativar(id);
+        } else {
+            service.ativar(id);
+        }
+
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/inativar")
+    public ResponseEntity<Void> inativar(@PathVariable UUID id) {
+        service.inativar(id);
+        return ResponseEntity.noContent().build(); // Retorna 204 No Content (sucesso sem corpo)
+    }
+
+    @PatchMapping("/{id}/ativar")
+    public ResponseEntity<Void> ativar(@PathVariable UUID id) {
+        service.ativar(id);
+        return ResponseEntity.noContent().build(); // Retorna 204 No Content
     }
 }

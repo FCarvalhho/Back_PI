@@ -22,7 +22,6 @@ public record FuncionarioRequestDTO(
         @Size(max = 255, message = "O e-mail não pode exceder 255 caracteres")
         String email,
 
-        @NotBlank(message = "A senha é obrigatória")
         @Size(min = 6, max = 100, message = "A senha deve ter entre 6 e 100 caracteres")
         String senha,
 
